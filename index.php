@@ -36,7 +36,14 @@ if ($uri === '/' && $method === 'GET') {
                 throw new \RuntimeException('Failed to move uploaded file.');
             }
 
-            $type   = in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp']) ? 'image' : 'document';
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+                $type = 'image';
+            } elseif (in_array($ext, ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'webm'])) {
+                $type = 'audio';
+            } else {
+                $type = 'document';
+            }
+
             $result = $analyzer->analyze($type, '', $dest);
         } else {
             $text = trim($_POST['text'] ?? '');
