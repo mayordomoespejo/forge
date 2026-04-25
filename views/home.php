@@ -34,6 +34,18 @@ ob_start();
                         <button type="button" class="remove-file-btn" id="remove-file">&#10005; Remove</button>
                     </div>
                 </div>
+                <div id="doc-model-wrap">
+                    <div class="doc-model-selector">
+                        <label class="doc-model-label" for="doc-model">Document type</label>
+                        <select name="doc_model" id="doc-model" class="translate-select">
+                            <option value="prebuilt-read">General document</option>
+                            <option value="prebuilt-invoice">Invoice</option>
+                            <option value="prebuilt-receipt">Receipt</option>
+                            <option value="prebuilt-idDocument">ID Document</option>
+                            <option value="prebuilt-businessCard">Business card</option>
+                        </select>
+                    </div>
+                </div>
             </div>
 
             <div class="tab-panel hidden" id="tab-text">
@@ -63,6 +75,22 @@ ob_start();
                         <button type="button" class="remove-file-btn" id="remove-audio">&#10005; Remove</button>
                     </div>
                 </div>
+                <div class="doc-model-selector" style="margin-top: 1rem;">
+                    <label class="doc-model-label" for="speech-language">Audio language</label>
+                    <select name="speech_language" id="speech-language" class="translate-select">
+                        <option value="en-US">English (US)</option>
+                        <option value="es-ES">Spanish (ES)</option>
+                        <option value="fr-FR">French</option>
+                        <option value="de-DE">German</option>
+                        <option value="pt-BR">Portuguese (BR)</option>
+                        <option value="it-IT">Italian</option>
+                        <option value="ja-JP">Japanese</option>
+                        <option value="zh-CN">Chinese (Simplified)</option>
+                        <option value="ar-SA">Arabic</option>
+                        <option value="ko-KR">Korean</option>
+                        <option value="ru-RU">Russian</option>
+                    </select>
+                </div>
             </div>
 
             <button type="submit" class="submit-btn" id="submit-btn">
@@ -72,6 +100,16 @@ ob_start();
                 </span>
             </button>
         </form>
+        <script>
+        (function() {
+            var docModelWrap = document.getElementById('doc-model-wrap');
+            document.querySelectorAll('.tab-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    if (docModelWrap) docModelWrap.style.display = btn.dataset.tab === 'file' ? '' : 'none';
+                });
+            });
+        }());
+        </script>
     </div>
 </div>
 <?php
