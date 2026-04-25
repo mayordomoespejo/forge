@@ -21,7 +21,7 @@ class SpeechService
      *
      * @throws \RuntimeException
      */
-    public function transcribe(string $filePath): string
+    public function transcribe(string $filePath, string $language = 'en-US'): string
     {
         if ($this->key === '') {
             throw new \RuntimeException('Azure Speech key not configured.');
@@ -47,8 +47,9 @@ class SpeechService
         };
 
         $url = sprintf(
-            'https://%s.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=en-US&format=simple',
-            $this->region
+            'https://%s.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=%s&format=simple',
+            $this->region,
+            urlencode($language)
         );
 
         $ch = curl_init($url);
