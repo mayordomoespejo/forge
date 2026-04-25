@@ -1,0 +1,6 @@
+PROVIDER="claude"
+FILE_PATTERNS="*.php,*.js,*.css"
+EXCLUDE_PATTERNS="vendor/*,*.min.js,*.min.css"
+RULES_FILE="AGENTS.md"
+STRICT_MODE="true"
+TIMEOUT="300"
