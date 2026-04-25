@@ -644,3 +644,75 @@ a:hover { text-decoration: underline; }
 
 .hidden { display: none !important; }
 .muted  { color: var(--muted); }
+
+/* ── Translation ────────────────────────────────────────────── */
+.translate-section { margin-top: 1.5rem; }
+
+.translate-controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.translate-select {
+    flex: 1;
+    min-width: 160px;
+    padding: 0.5rem 0.75rem;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 6px;
+    color: #e5e5e5;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.translate-select:focus {
+    outline: none;
+    border-color: #f97316;
+}
+
+.translate-btn {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid #f97316;
+    border-radius: 6px;
+    color: #f97316;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+}
+
+.translate-btn:hover {
+    background: #f97316;
+    color: #000;
+}
+
+.translate-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.translate-output {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 8px;
+}
+
+.translate-result-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #f97316;
+    margin-bottom: 0.5rem;
+}
+
+.translate-text {
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #e5e5e5;
+    white-space: pre-wrap;
+}

@@ -181,6 +181,32 @@ $error    = $result['error']    ?? null;
             <?php else: ?>
                 <p class="muted">No analysis data available.</p>
             <?php endif; ?>
+
+            <?php if (!$error): ?>
+            <div class="section translate-section">
+                <h3 class="section-title">Translate</h3>
+                <div class="translate-controls">
+                    <select id="translate-lang" class="translate-select">
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                        <option value="pt">Portuguese</option>
+                        <option value="it">Italian</option>
+                        <option value="ja">Japanese</option>
+                        <option value="zh-Hans">Chinese (Simplified)</option>
+                        <option value="ar">Arabic</option>
+                        <option value="ko">Korean</option>
+                        <option value="ru">Russian</option>
+                    </select>
+                    <button type="button" class="translate-btn" id="translate-btn">Translate content</button>
+                </div>
+                <div id="translate-output" class="translate-output hidden">
+                    <div class="translate-result-label">Translation</div>
+                    <div id="translate-text" class="translate-text"></div>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
 
         <div class="chat-panel">

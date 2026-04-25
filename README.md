@@ -11,6 +11,7 @@ AI-powered content analyzer — upload text, images, or documents and get struct
 - Extract structured data from PDF documents using Azure Document Intelligence
 - Chat with an AI assistant that has full context of your analyzed content
 - Supports drag-and-drop file uploads
+- Translate analyzed content to 11 languages using Azure Translator
 
 ---
 
@@ -76,6 +77,8 @@ Open [http://localhost:8000](http://localhost:8000) in your browser.
 | `AZURE_LANGUAGE_KEY` | Azure AI Language API key |
 | `AZURE_DOCUMENT_ENDPOINT` | Azure Document Intelligence resource endpoint URL |
 | `AZURE_DOCUMENT_KEY` | Azure Document Intelligence API key |
+| `AZURE_TRANSLATOR_KEY` | Azure Translator resource API key |
+| `AZURE_TRANSLATOR_REGION` | Azure region for the Translator resource (e.g. `eastus`) |
 
 ---
 

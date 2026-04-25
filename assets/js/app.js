@@ -196,3 +196,62 @@
     });
   }
 })();
+
+// ── Translation ─────────────────────────────────────────────
+(function () {
+    const btn    = document.getElementById('translate-btn');
+    const select = document.getElementById('translate-lang');
+    const output = document.getElementById('translate-output');
+    const target = document.getElementById('translate-text');
+
+    if (!btn) return;
+
+    // Collect the main text content from the page to translate
+    function getContentToTranslate() {
+        const extracted = document.querySelector('.extracted-text');
+        if (extracted) return extracted.innerText;
+
+        const desc = document.querySelector('.description-text');
+        if (desc) return desc.innerText;
+
+        const tags = document.querySelectorAll('.tag');
+        if (tags.length > 0) return Array.from(tags).map(t => t.innerText).join(', ');
+
+        return '';
+    }
+
+    btn.addEventListener('click', async function () {
+        const text     = getContentToTranslate();
+        const language = select.value;
+
+        if (!text) {
+            alert('No translatable content found.');
+            return;
+        }
+
+        btn.disabled    = true;
+        btn.textContent = 'Translating...';
+
+        try {
+            const res  = await fetch('/ajax/translate.php', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ text, language }),
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                target.textContent = data.translated;
+                output.classList.remove('hidden');
+                output.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } else {
+                alert('Translation error: ' + (data.error || 'Unknown error'));
+            }
+        } catch (err) {
+            alert('Network error: ' + err.message);
+        } finally {
+            btn.disabled    = false;
+            btn.textContent = 'Translate content';
+        }
+    });
+}());
