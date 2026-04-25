@@ -32,9 +32,10 @@ class ContentAnalyzer
      * @param  string $type     'text' | 'image' | 'document' | 'audio'
      * @param  string $content  Plain text (for type=text)
      * @param  string $filePath Absolute path to file (for type=image|document|audio)
+     * @param  array  $options  Optional parameters: doc_model, speech_language
      * @return array<string, mixed>
      */
-    public function analyze(string $type, string $content = '', string $filePath = ''): array
+    public function analyze(string $type, string $content = '', string $filePath = '', array $options = []): array
     {
         try {
             $result = match($type) {
@@ -52,8 +53,8 @@ class ContentAnalyzer
                     return $result;
                 })(),
                 'image'    => $this->analyzeImage($filePath),
-                'document' => $this->analyzeDocument($filePath),
-                'audio'    => $this->analyzeAudio($filePath),
+                'document' => $this->analyzeDocument($filePath, $options),
+                'audio'    => $this->analyzeAudio($filePath, $options),
                 default    => throw new \InvalidArgumentException("Unknown type: {$type}"),
             };
 
@@ -110,9 +111,10 @@ class ContentAnalyzer
     /**
      * @return array<string, mixed>
      */
-    private function analyzeDocument(string $filePath): array
+    private function analyzeDocument(string $filePath, array $options = []): array
     {
-        $doc = $this->document->extract($filePath);
+        $docModel = $options['doc_model'] ?? 'prebuilt-read';
+        $doc = $this->document->extract($filePath, $docModel);
 
         $language = [];
         if (!empty($doc['content'])) {
@@ -145,9 +147,10 @@ class ContentAnalyzer
     /**
      * @return array<string, mixed>
      */
-    private function analyzeAudio(string $filePath): array
+    private function analyzeAudio(string $filePath, array $options = []): array
     {
-        $transcript = $this->speech->transcribe($filePath);
+        $language   = $options['speech_language'] ?? 'en-US';
+        $transcript = $this->speech->transcribe($filePath, $language);
         $langAnalysis = [];
         if ($transcript !== '') {
             try {
