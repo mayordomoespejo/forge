@@ -2,12 +2,8 @@
 
 namespace Forge\Services;
 
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\GuzzleException;
-
 class LanguageService
 {
-    private Client $client;
     private string $endpoint;
     private string $key;
 
@@ -15,14 +11,6 @@ class LanguageService
     {
         $this->endpoint = rtrim($_ENV['AZURE_LANGUAGE_ENDPOINT'] ?? '', '/');
         $this->key      = $_ENV['AZURE_LANGUAGE_KEY'] ?? '';
-
-        $this->client = new Client([
-            'timeout' => 20,
-            'headers' => [
-                'Ocp-Apim-Subscription-Key' => $this->key,
-                'Content-Type'              => 'application/json',
-            ],
-        ]);
     }
 
     /**
@@ -37,26 +25,65 @@ class LanguageService
      */
     public function analyze(string $text): array
     {
-        $body = ['documents' => [['id' => '1', 'text' => $text]]];
+        $body = json_encode(['documents' => [['id' => '1', 'text' => $text]]]);
 
-        $sentiment  = $this->call('/text/analytics/v3.1/sentiment', $body);
-        $keyPhrases = $this->call('/text/analytics/v3.1/keyPhrases', $body);
-        $entities   = $this->call('/text/analytics/v3.1/entities/recognition/general', $body);
-        $languages  = $this->call('/text/analytics/v3.1/languages', $body);
+        $endpoints = [
+            'sentiment'  => '/text/analytics/v3.1/sentiment',
+            'keyPhrases' => '/text/analytics/v3.1/keyPhrases',
+            'entities'   => '/text/analytics/v3.1/entities/recognition/general',
+            'languages'  => '/text/analytics/v3.1/languages',
+        ];
 
-        $sentDoc   = $sentiment['documents'][0] ?? [];
+        $multi   = curl_multi_init();
+        $handles = [];
+
+        foreach ($endpoints as $key => $path) {
+            $ch = curl_init($this->endpoint . $path);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => $body,
+                CURLOPT_HTTPHEADER     => [
+                    'Ocp-Apim-Subscription-Key: ' . $this->key,
+                    'Content-Type: application/json',
+                ],
+                CURLOPT_TIMEOUT        => 20,
+            ]);
+            curl_multi_add_handle($multi, $ch);
+            $handles[$key] = $ch;
+        }
+
+        $running = null;
+        do {
+            curl_multi_exec($multi, $running);
+            if ($running) {
+                curl_multi_select($multi);
+            }
+        } while ($running > 0);
+
+        $results = [];
+        foreach ($handles as $key => $ch) {
+            $raw           = curl_multi_getcontent($ch);
+            $results[$key] = json_decode($raw ?: '{}', true) ?? [];
+            curl_multi_remove_handle($multi, $ch);
+            curl_close($ch);
+        }
+
+        curl_multi_close($multi);
+
+        $sentDoc   = $results['sentiment']['documents'][0] ?? [];
         $sentLabel = $sentDoc['sentiment'] ?? 'unknown';
         $scores    = $sentDoc['confidenceScores'] ?? ['positive' => 0.0, 'neutral' => 0.0, 'negative' => 0.0];
 
-        $phrases = $keyPhrases['documents'][0]['keyPhrases'] ?? [];
+        $phrases = $results['keyPhrases']['documents'][0]['keyPhrases'] ?? [];
 
-        $rawEntities    = $entities['documents'][0]['entities'] ?? [];
+        $rawEntities    = $results['entities']['documents'][0]['entities'] ?? [];
         $mappedEntities = array_map(
             fn($e) => ['text' => $e['text'] ?? '', 'category' => $e['category'] ?? ''],
             $rawEntities
         );
 
-        $langDoc  = $languages['documents'][0]['detectedLanguage'] ?? [];
+        $langDoc  = $results['languages']['documents'][0]['detectedLanguage'] ?? [];
         $langName = $langDoc['name'] ?? 'Unknown';
         $langConf = (float) ($langDoc['confidenceScore'] ?? 0.0);
 
@@ -72,19 +99,5 @@ class LanguageService
             'language'            => $langName,
             'language_confidence' => $langConf,
         ];
-    }
-
-    /**
-     * @param  array<string, mixed> $body
-     * @return array<string, mixed>
-     */
-    private function call(string $path, array $body): array
-    {
-        try {
-            $response = $this->client->post($this->endpoint . $path, ['json' => $body]);
-            return json_decode((string) $response->getBody(), true) ?? [];
-        } catch (GuzzleException $e) {
-            return ['documents' => []];
-        }
     }
 }
