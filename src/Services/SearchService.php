@@ -107,6 +107,51 @@ class SearchService
         ], $data['value'] ?? []);
     }
 
+    /**
+     * @return array<int, array{type: string, filename: string, summary: string, timestamp: string, language: string}>
+     */
+    public function all(int $top = 20): array
+    {
+        if (!$this->isConfigured()) return [];
+
+        $body = json_encode([
+            'search'  => '*',
+            'select'  => 'id,type,filename,summary,timestamp,language',
+            'top'     => $top,
+            'orderby' => 'timestamp desc',
+        ]);
+
+        $url = $this->endpoint . '/indexes/' . $this->index . '/docs/search?api-version=' . $this->apiVersion;
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => $body,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_HTTPHEADER     => [
+                'api-key: ' . $this->key,
+                'Content-Type: application/json',
+            ],
+        ]);
+
+        $raw      = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($raw === false || $httpCode !== 200) return [];
+
+        $data = json_decode($raw, true) ?? [];
+        return array_map(fn($v) => [
+            'id'        => $v['id']        ?? '',
+            'type'      => $v['type']      ?? '',
+            'filename'  => $v['filename']  ?? '',
+            'summary'   => $v['summary']   ?? '',
+            'timestamp' => $v['timestamp'] ?? '',
+            'language'  => $v['language']  ?? '',
+        ], $data['value'] ?? []);
+    }
+
     private function ensureIndex(): void
     {
         $url = $this->endpoint . '/indexes/' . $this->index . '?api-version=' . $this->apiVersion;
