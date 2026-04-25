@@ -7,20 +7,22 @@ namespace Forge\Services;
 class SummaryService
 {
     private ChatService $chat;
+    private AzureSummaryService $azureSummary;
 
     public function __construct()
     {
-        $this->chat = new ChatService();
+        $this->chat         = new ChatService();
+        $this->azureSummary = new AzureSummaryService();
     }
 
     /**
      * @param  array<int, array{text: string, category: string}> $entities
-     * @return array{consistent: bool, confidence: float, reason: string, summary: string|null}
+     * @return array{consistent: bool, confidence: float, reason: string, summary: string|null, method: string}
      */
     public function process(string $text, array $entities = []): array
     {
         if (trim($text) === '') {
-            return ['consistent' => false, 'confidence' => 0.0, 'reason' => 'Empty content.', 'summary' => null];
+            return ['consistent' => false, 'confidence' => 0.0, 'reason' => 'Empty content.', 'summary' => null, 'method' => 'abstractive'];
         }
 
         // Step 1 — Consistency judge
@@ -41,7 +43,7 @@ class SummaryService
             $judgeRaw    = preg_replace('/\s*```$/', '', $judgeRaw);
             $judgeResult = json_decode($judgeRaw, true) ?? [];
         } catch (\Throwable) {
-            return ['consistent' => false, 'confidence' => 0.0, 'reason' => 'Judge failed.', 'summary' => null];
+            return ['consistent' => false, 'confidence' => 0.0, 'reason' => 'Judge failed.', 'summary' => null, 'method' => 'abstractive'];
         }
 
         $consistent = (bool) ($judgeResult['consistent'] ?? false);
@@ -49,10 +51,21 @@ class SummaryService
         $reason     = (string) ($judgeResult['reason'] ?? '');
 
         if (!$consistent || $confidence < 0.5) {
-            return ['consistent' => false, 'confidence' => $confidence, 'reason' => $reason, 'summary' => null];
+            return ['consistent' => false, 'confidence' => $confidence, 'reason' => $reason, 'summary' => null, 'method' => 'abstractive'];
         }
 
-        // Step 2 — Summarizer
+        // Step 2 — Try Azure extractive first, fallback to gpt-4o-mini
+        $extractive = $this->azureSummary->extractive($text);
+        if ($extractive !== null) {
+            return [
+                'consistent' => true,
+                'confidence' => $confidence,
+                'reason'     => $reason,
+                'summary'    => $extractive,
+                'method'     => 'extractive',
+            ];
+        }
+
         $entityList = implode(', ', array_map(fn($e) => $e['text'] . ' (' . $e['category'] . ')', $entities));
 
         $summaryMessages = [
@@ -77,6 +90,7 @@ class SummaryService
             'confidence' => $confidence,
             'reason'     => $reason,
             'summary'    => $summary,
+            'method'     => 'abstractive',
         ];
     }
 }
