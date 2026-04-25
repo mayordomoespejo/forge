@@ -28,6 +28,11 @@ if ($uri === '/' && $method === 'GET') {
     $analyzer = new Forge\ContentAnalyzer();
 
     try {
+        $options = [
+            'doc_model'       => $_POST['doc_model']       ?? 'prebuilt-read',
+            'speech_language' => $_POST['speech_language'] ?? 'en-US',
+        ];
+
         if (!empty($_FILES['file']['name']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
             $ext  = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
             $dest = __DIR__ . '/uploads/' . uniqid('forge_', true) . '.' . $ext;
@@ -44,14 +49,14 @@ if ($uri === '/' && $method === 'GET') {
                 $type = 'document';
             }
 
-            $result = $analyzer->analyze($type, '', $dest);
+            $result = $analyzer->analyze($type, '', $dest, $options);
         } else {
             $text = trim($_POST['text'] ?? '');
             if ($text === '') {
                 header('Location: /');
                 exit;
             }
-            $result = $analyzer->analyze('text', $text);
+            $result = $analyzer->analyze('text', $text, '', $options);
         }
 
         $_SESSION['result'] = $result;
@@ -74,6 +79,9 @@ if ($uri === '/' && $method === 'GET') {
 
     $result = $_SESSION['result'];
     require __DIR__ . '/views/results.php';
+
+} elseif ($uri === '/history' && $method === 'GET') {
+    require __DIR__ . '/views/history.php';
 
 } elseif (str_starts_with($uri, '/ajax/') && $method === 'POST') {
 
