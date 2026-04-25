@@ -82,6 +82,64 @@
     });
   }
 
+  /* Audio drag & drop */
+  var audioDropZone     = $('#drop-zone-audio');
+  var audioInput        = $('#audio-input');
+  var audioDropContent  = $('#drop-zone-audio-content');
+  var audioDropSelected = $('#drop-zone-audio-selected');
+  var audioSelectedName = $('#audio-selected-name');
+  var removeAudioBtn    = $('#remove-audio');
+
+  function showSelectedAudio(name) {
+    if (!audioDropContent || !audioDropSelected) return;
+    audioDropContent.classList.add('hidden');
+    audioDropSelected.classList.remove('hidden');
+    if (audioSelectedName) audioSelectedName.textContent = name;
+  }
+
+  function clearSelectedAudio() {
+    if (!audioDropContent || !audioDropSelected) return;
+    audioDropSelected.classList.add('hidden');
+    audioDropContent.classList.remove('hidden');
+    if (audioInput) audioInput.value = '';
+  }
+
+  if (audioInput) {
+    audioInput.addEventListener('change', function () {
+      if (this.files && this.files[0]) showSelectedAudio(this.files[0].name);
+    });
+  }
+
+  if (removeAudioBtn) {
+    removeAudioBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      clearSelectedAudio();
+    });
+  }
+
+  if (audioDropZone) {
+    audioDropZone.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      audioDropZone.classList.add('dragover');
+    });
+    audioDropZone.addEventListener('dragleave', function () {
+      audioDropZone.classList.remove('dragover');
+    });
+    audioDropZone.addEventListener('drop', function (e) {
+      e.preventDefault();
+      audioDropZone.classList.remove('dragover');
+      var files = e.dataTransfer && e.dataTransfer.files;
+      if (files && files[0] && audioInput) {
+        try {
+          var dt = new DataTransfer();
+          dt.items.add(files[0]);
+          audioInput.files = dt.files;
+        } catch (ex) {}
+        showSelectedAudio(files[0].name);
+      }
+    });
+  }
+
   /* Submit spinner */
   var analyzeForm   = $('#analyze-form');
   var submitBtn     = $('#submit-btn');
@@ -195,7 +253,7 @@
       }
     });
   }
-})();
+}());
 
 // ── Translation ─────────────────────────────────────────────
 (function () {
