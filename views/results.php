@@ -297,6 +297,55 @@ $error    = $result['error']    ?? null;
             <?php endif; ?>
 
             <?php if (!$error): ?>
+            <?php
+            $pipeline = $result['pipeline'] ?? [];
+            if (!empty($pipeline)):
+                $pipEntities  = $pipeline['entities']  ?? [];
+                $pipPiiFound  = $pipeline['pii_found'] ?? [];
+                $pipRedacted  = $pipeline['redacted']  ?? '';
+                $pipConsistent = $pipeline['consistent'] ?? false;
+                $pipSummary   = $pipeline['summary']   ?? null;
+                $pipConf      = $pipeline['confidence'] ?? 0.0;
+            ?>
+            <div class="section intelligence-section">
+                <h3 class="section-title">Intelligence Report</h3>
+
+                <?php if (!empty($pipPiiFound)): ?>
+                <div class="intel-block">
+                    <span class="intel-label">PII detected</span>
+                    <div class="tag-cloud">
+                        <?php foreach ($pipPiiFound as $pii): ?>
+                        <span class="tag tag-pii">
+                            <span class="pii-dot"></span>
+                            <?= htmlspecialchars($pii['category']) ?>
+                        </span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if ($pipRedacted && !empty($pipPiiFound)): ?>
+                <div class="intel-block">
+                    <span class="intel-label">Redacted preview</span>
+                    <div class="redacted-preview"><?= nl2br(htmlspecialchars(mb_substr($pipRedacted, 0, 400))) ?><?= mb_strlen($pipRedacted) > 400 ? '…' : '' ?></div>
+                </div>
+                <?php endif; ?>
+
+                <?php if ($pipConsistent && $pipSummary): ?>
+                <div class="intel-block">
+                    <span class="intel-label">
+                        Summary
+                        <span class="intel-confidence"><?= round($pipConf * 100) ?>% confidence</span>
+                    </span>
+                    <p class="summary-text"><?= htmlspecialchars($pipSummary) ?></p>
+                </div>
+                <?php elseif (!$pipConsistent): ?>
+                <div class="intel-block">
+                    <span class="intel-label muted">Not enough content to summarize</span>
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
             <div class="section translate-section">
                 <h3 class="section-title">Translate</h3>
                 <div class="translate-controls">
