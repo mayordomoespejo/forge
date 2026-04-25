@@ -34,16 +34,8 @@ class ContentAnalyzer
                     'content'  => $content,
                     'analysis' => $this->language->analyze($content),
                 ],
-                'image'    => [
-                    'type'     => 'image',
-                    'file'     => basename($filePath),
-                    'analysis' => $this->chat->analyzeImage($filePath),
-                ],
-                'document' => [
-                    'type'     => 'document',
-                    'file'     => basename($filePath),
-                    'analysis' => $this->document->extract($filePath),
-                ],
+                'image'    => $this->analyzeImage($filePath),
+                'document' => $this->analyzeDocument($filePath),
                 default    => throw new \InvalidArgumentException("Unknown type: {$type}"),
             };
         } catch (\Throwable $e) {
@@ -52,5 +44,53 @@ class ContentAnalyzer
                 'error' => $e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function analyzeImage(string $filePath): array
+    {
+        $imageAnalysis = $this->chat->analyzeImage($filePath);
+
+        $language = [];
+        if (!empty($imageAnalysis['description'])) {
+            try {
+                $language = $this->language->analyze($imageAnalysis['description']);
+            } catch (\Throwable) {
+                $language = [];
+            }
+        }
+
+        return [
+            'type'     => 'image',
+            'file'     => basename($filePath),
+            'analysis' => $imageAnalysis,
+            'language' => $language,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function analyzeDocument(string $filePath): array
+    {
+        $doc = $this->document->extract($filePath);
+
+        $language = [];
+        if (!empty($doc['content'])) {
+            try {
+                $language = $this->language->analyze(mb_substr($doc['content'], 0, 5000));
+            } catch (\Throwable) {
+                $language = [];
+            }
+        }
+
+        return [
+            'type'     => 'document',
+            'file'     => basename($filePath),
+            'analysis' => $doc,
+            'language' => $language,
+        ];
     }
 }
