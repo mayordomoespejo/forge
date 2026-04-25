@@ -135,6 +135,63 @@ $error    = $result['error']    ?? null;
                 </div>
                 <?php endif; ?>
 
+                <?php
+                $lang = $result['language'] ?? [];
+                if (!empty($lang)):
+                    $langSentiment = $lang['sentiment'] ?? '';
+                    $langScores    = $lang['sentiment_scores'] ?? [];
+                    $langPhrases   = $lang['key_phrases'] ?? [];
+                    $langEntities  = $lang['entities'] ?? [];
+                ?>
+                <?php if ($langSentiment): ?>
+                <div class="meta-row">
+                    <span class="badge badge-sentiment badge-<?= htmlspecialchars($langSentiment) ?>">
+                        <?= htmlspecialchars(ucfirst($langSentiment)) ?>
+                    </span>
+                </div>
+                <?php endif; ?>
+
+                <?php if (!empty($langScores)): ?>
+                <div class="scores-bar-group">
+                    <?php foreach (['positive', 'neutral', 'negative'] as $s): ?>
+                    <div class="score-bar-row">
+                        <span class="score-label"><?= ucfirst($s) ?></span>
+                        <div class="score-track">
+                            <div class="score-fill score-<?= $s ?>"
+                                 style="width: <?= round(($langScores[$s] ?? 0) * 100) ?>%"></div>
+                        </div>
+                        <span class="score-value"><?= round(($langScores[$s] ?? 0) * 100) ?>%</span>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+
+                <?php if (!empty($langPhrases)): ?>
+                <div class="section">
+                    <h3 class="section-title">Key phrases</h3>
+                    <div class="tag-cloud">
+                        <?php foreach ($langPhrases as $phrase): ?>
+                        <span class="tag"><?= htmlspecialchars($phrase) ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if (!empty($langEntities)): ?>
+                <div class="section">
+                    <h3 class="section-title">Entities</h3>
+                    <ul class="entity-list">
+                        <?php foreach ($langEntities as $entity): ?>
+                        <li class="entity-item">
+                            <span class="entity-text"><?= htmlspecialchars($entity['text']) ?></span>
+                            <span class="entity-cat"><?= htmlspecialchars($entity['category']) ?></span>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+                <?php endif; ?>
+                <?php endif; ?>
+
             <?php elseif ($type === 'document'): ?>
                 <?php
                 $pageCount  = $analysis['page_count'] ?? 0;
@@ -176,6 +233,63 @@ $error    = $result['error']    ?? null;
                     </div>
                     <?php endforeach; ?>
                 </div>
+                <?php endif; ?>
+
+                <?php
+                $lang = $result['language'] ?? [];
+                if (!empty($lang)):
+                    $langSentiment = $lang['sentiment'] ?? '';
+                    $langScores    = $lang['sentiment_scores'] ?? [];
+                    $langPhrases   = $lang['key_phrases'] ?? [];
+                    $langEntities  = $lang['entities'] ?? [];
+                ?>
+                <?php if ($langSentiment): ?>
+                <div class="meta-row">
+                    <span class="badge badge-sentiment badge-<?= htmlspecialchars($langSentiment) ?>">
+                        <?= htmlspecialchars(ucfirst($langSentiment)) ?>
+                    </span>
+                </div>
+                <?php endif; ?>
+
+                <?php if (!empty($langScores)): ?>
+                <div class="scores-bar-group">
+                    <?php foreach (['positive', 'neutral', 'negative'] as $s): ?>
+                    <div class="score-bar-row">
+                        <span class="score-label"><?= ucfirst($s) ?></span>
+                        <div class="score-track">
+                            <div class="score-fill score-<?= $s ?>"
+                                 style="width: <?= round(($langScores[$s] ?? 0) * 100) ?>%"></div>
+                        </div>
+                        <span class="score-value"><?= round(($langScores[$s] ?? 0) * 100) ?>%</span>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+
+                <?php if (!empty($langPhrases)): ?>
+                <div class="section">
+                    <h3 class="section-title">Key phrases</h3>
+                    <div class="tag-cloud">
+                        <?php foreach ($langPhrases as $phrase): ?>
+                        <span class="tag"><?= htmlspecialchars($phrase) ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if (!empty($langEntities)): ?>
+                <div class="section">
+                    <h3 class="section-title">Entities</h3>
+                    <ul class="entity-list">
+                        <?php foreach ($langEntities as $entity): ?>
+                        <li class="entity-item">
+                            <span class="entity-text"><?= htmlspecialchars($entity['text']) ?></span>
+                            <span class="entity-cat"><?= htmlspecialchars($entity['category']) ?></span>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+                <?php endif; ?>
                 <?php endif; ?>
 
             <?php else: ?>
