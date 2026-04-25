@@ -11,6 +11,8 @@ $dotenv->safeLoad();
 
 header('Content-Type: application/json');
 
+$search = new Forge\Services\SearchService();
+
 try {
     $input   = json_decode(file_get_contents('php://input') ?: '{}', true) ?? [];
     $message = trim((string) ($input['message'] ?? $_POST['message'] ?? ''));
@@ -28,6 +30,17 @@ try {
         $contextJson = substr($contextJson, 0, 2000) . '... [truncated for brevity]';
     }
 
+    $ragContext = '';
+    if ($search->isConfigured()) {
+        $pastResults = $search->search($message, 3);
+        if (!empty($pastResults)) {
+            $ragContext = "\n\nRelevant past analyses:\n";
+            foreach ($pastResults as $r) {
+                $ragContext .= '- [' . $r['type'] . '] ' . ($r['filename'] ?: 'text') . ': ' . ($r['summary'] ?: mb_substr($r['content'], 0, 200)) . "\n";
+            }
+        }
+    }
+
     $cleanHistory = [];
     foreach ($history as $item) {
         $role    = in_array($item['role'] ?? '', ['user', 'assistant', 'system']) ? $item['role'] : 'user';
@@ -41,7 +54,7 @@ try {
         [
             [
                 'role'    => 'system',
-                'content' => "You are an AI assistant helping analyze content. Context of the analyzed content: {$contextJson}. Answer questions about this content helpfully and concisely.",
+                'content' => "You are an AI assistant helping analyze content. Context of the analyzed content: {$contextJson}. Answer questions about this content helpfully and concisely.{$ragContext}",
             ],
         ],
         $cleanHistory,
