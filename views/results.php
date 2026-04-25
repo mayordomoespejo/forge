@@ -47,6 +47,7 @@ $error    = $result['error']    ?? null;
                 $entities  = $analysis['entities']         ?? [];
                 $language  = $analysis['language']         ?? 'Unknown';
                 $langConf  = $analysis['language_confidence'] ?? 0.0;
+                $entityLinks = $analysis['entity_links'] ?? [];
                 ?>
                 <div class="meta-row">
                     <span class="badge badge-sentiment badge-<?= htmlspecialchars($sentiment) ?>">
@@ -88,9 +89,24 @@ $error    = $result['error']    ?? null;
                 <div class="section">
                     <h3 class="section-title">Entities</h3>
                     <ul class="entity-list">
-                        <?php foreach ($entities as $entity): ?>
+                        <?php foreach ($entities as $entity):
+                            $link = null;
+                            foreach ($entityLinks as $el) {
+                                if (strcasecmp($el['match'], $entity['text']) === 0 && $el['url'] !== '') {
+                                    $link = $el['url'];
+                                    break;
+                                }
+                            }
+                        ?>
                         <li class="entity-item">
+                            <?php if ($link): ?>
+                            <a href="<?= htmlspecialchars($link) ?>" target="_blank" rel="noopener" class="entity-link">
+                                <?= htmlspecialchars($entity['text']) ?>
+                                <span class="entity-link-icon">&#8599;</span>
+                            </a>
+                            <?php else: ?>
                             <span class="entity-text"><?= htmlspecialchars($entity['text']) ?></span>
+                            <?php endif; ?>
                             <span class="entity-cat"><?= htmlspecialchars($entity['category']) ?></span>
                         </li>
                         <?php endforeach; ?>
@@ -179,6 +195,7 @@ $error    = $result['error']    ?? null;
                     $langScores    = $lang['sentiment_scores'] ?? [];
                     $langPhrases   = $lang['key_phrases'] ?? [];
                     $langEntities  = $lang['entities'] ?? [];
+                    $langEntityLinks = $lang['entity_links'] ?? [];
                 ?>
                 <?php if ($langSentiment): ?>
                 <div class="meta-row">
@@ -218,9 +235,24 @@ $error    = $result['error']    ?? null;
                 <div class="section">
                     <h3 class="section-title">Entities</h3>
                     <ul class="entity-list">
-                        <?php foreach ($langEntities as $entity): ?>
+                        <?php foreach ($langEntities as $entity):
+                            $link = null;
+                            foreach ($langEntityLinks as $el) {
+                                if (strcasecmp($el['match'], $entity['text']) === 0 && $el['url'] !== '') {
+                                    $link = $el['url'];
+                                    break;
+                                }
+                            }
+                        ?>
                         <li class="entity-item">
+                            <?php if ($link): ?>
+                            <a href="<?= htmlspecialchars($link) ?>" target="_blank" rel="noopener" class="entity-link">
+                                <?= htmlspecialchars($entity['text']) ?>
+                                <span class="entity-link-icon">&#8599;</span>
+                            </a>
+                            <?php else: ?>
                             <span class="entity-text"><?= htmlspecialchars($entity['text']) ?></span>
+                            <?php endif; ?>
                             <span class="entity-cat"><?= htmlspecialchars($entity['category']) ?></span>
                         </li>
                         <?php endforeach; ?>
@@ -234,10 +266,47 @@ $error    = $result['error']    ?? null;
                 $pageCount  = $analysis['page_count'] ?? 0;
                 $content    = $analysis['content']    ?? '';
                 $tables     = $analysis['tables']     ?? [];
+                $fields     = $analysis['fields']     ?? [];
+                $docModel   = $_SESSION['result']['doc_model'] ?? '';
                 ?>
                 <div class="meta-row">
                     <span class="badge badge-pages"><?= $pageCount ?> page<?= $pageCount !== 1 ? 's' : '' ?></span>
                 </div>
+
+                <?php if (!empty($fields)): ?>
+                <div class="section">
+                    <h3 class="section-title">Extracted fields</h3>
+                    <ul class="entity-list">
+                        <?php foreach ($fields as $fieldName => $fieldValue): ?>
+                        <?php if (is_array($fieldValue)): ?>
+                        <li class="entity-item" style="flex-direction: column; align-items: flex-start; gap: 0.3rem;">
+                            <span class="entity-cat"><?= htmlspecialchars($fieldName) ?></span>
+                            <div class="table-scroll" style="width:100%;">
+                                <table class="data-table">
+                                    <?php foreach ($fieldValue as $ri => $row): ?>
+                                    <tr>
+                                        <?php foreach ($row as $k => $v): ?>
+                                        <?php if ($ri === 0): ?>
+                                        <th><?= htmlspecialchars($k) ?></th>
+                                        <?php else: ?>
+                                        <td><?= htmlspecialchars((string)$v) ?></td>
+                                        <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </table>
+                            </div>
+                        </li>
+                        <?php else: ?>
+                        <li class="entity-item">
+                            <span class="entity-text"><?= htmlspecialchars((string)$fieldValue) ?></span>
+                            <span class="entity-cat"><?= htmlspecialchars($fieldName) ?></span>
+                        </li>
+                        <?php endif; ?>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+                <?php endif; ?>
 
                 <?php if ($content): ?>
                 <div class="section">
@@ -279,6 +348,7 @@ $error    = $result['error']    ?? null;
                     $langScores    = $lang['sentiment_scores'] ?? [];
                     $langPhrases   = $lang['key_phrases'] ?? [];
                     $langEntities  = $lang['entities'] ?? [];
+                    $langEntityLinks = $lang['entity_links'] ?? [];
                 ?>
                 <?php if ($langSentiment): ?>
                 <div class="meta-row">
@@ -318,9 +388,24 @@ $error    = $result['error']    ?? null;
                 <div class="section">
                     <h3 class="section-title">Entities</h3>
                     <ul class="entity-list">
-                        <?php foreach ($langEntities as $entity): ?>
+                        <?php foreach ($langEntities as $entity):
+                            $link = null;
+                            foreach ($langEntityLinks as $el) {
+                                if (strcasecmp($el['match'], $entity['text']) === 0 && $el['url'] !== '') {
+                                    $link = $el['url'];
+                                    break;
+                                }
+                            }
+                        ?>
                         <li class="entity-item">
+                            <?php if ($link): ?>
+                            <a href="<?= htmlspecialchars($link) ?>" target="_blank" rel="noopener" class="entity-link">
+                                <?= htmlspecialchars($entity['text']) ?>
+                                <span class="entity-link-icon">&#8599;</span>
+                            </a>
+                            <?php else: ?>
                             <span class="entity-text"><?= htmlspecialchars($entity['text']) ?></span>
+                            <?php endif; ?>
                             <span class="entity-cat"><?= htmlspecialchars($entity['category']) ?></span>
                         </li>
                         <?php endforeach; ?>
@@ -340,6 +425,7 @@ $error    = $result['error']    ?? null;
                 $language     = $langAnalysis['language']            ?? '';
                 $langConf     = $langAnalysis['language_confidence'] ?? 0.0;
                 $opinions     = $langAnalysis['opinions']            ?? [];
+                $entityLinks  = $langAnalysis['entity_links']        ?? [];
                 ?>
 
                 <div class="meta-row">
@@ -378,9 +464,24 @@ $error    = $result['error']    ?? null;
                 <div class="section">
                     <h3 class="section-title">Entities</h3>
                     <ul class="entity-list">
-                        <?php foreach ($entities as $entity): ?>
+                        <?php foreach ($entities as $entity):
+                            $link = null;
+                            foreach ($entityLinks as $el) {
+                                if (strcasecmp($el['match'], $entity['text']) === 0 && $el['url'] !== '') {
+                                    $link = $el['url'];
+                                    break;
+                                }
+                            }
+                        ?>
                         <li class="entity-item">
+                            <?php if ($link): ?>
+                            <a href="<?= htmlspecialchars($link) ?>" target="_blank" rel="noopener" class="entity-link">
+                                <?= htmlspecialchars($entity['text']) ?>
+                                <span class="entity-link-icon">&#8599;</span>
+                            </a>
+                            <?php else: ?>
                             <span class="entity-text"><?= htmlspecialchars($entity['text']) ?></span>
+                            <?php endif; ?>
                             <span class="entity-cat"><?= htmlspecialchars($entity['category']) ?></span>
                         </li>
                         <?php endforeach; ?>
