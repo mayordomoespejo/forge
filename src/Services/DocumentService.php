@@ -26,10 +26,10 @@ class DocumentService
     }
 
     /**
-     * @return array{page_count: int, content: string, paragraphs: string[], tables: array}
+     * @return array{page_count: int, content: string, paragraphs: string[], tables: array, fields: array}
      * @throws \RuntimeException
      */
-    public function extract(string $filePath): array
+    public function extract(string $filePath, string $model = 'prebuilt-read'): array
     {
         try {
             $data = file_get_contents($filePath);
@@ -39,7 +39,7 @@ class DocumentService
 
             $base64    = base64_encode($data);
             $submitUrl = $this->endpoint
-                . '/formrecognizer/documentModels/prebuilt-read:analyze'
+                . '/formrecognizer/documentModels/' . $model . ':analyze'
                 . '?api-version=2023-07-31';
 
             $submitResponse    = $this->client->post($submitUrl, ['json' => ['base64Source' => $base64]]);
@@ -85,7 +85,7 @@ class DocumentService
 
     /**
      * @param  array<string, mixed> $analyzeResult
-     * @return array{page_count: int, content: string, paragraphs: string[], tables: array}
+     * @return array{page_count: int, content: string, paragraphs: string[], tables: array, fields: array}
      */
     private function parseResult(array $analyzeResult): array
     {
@@ -113,11 +113,35 @@ class DocumentService
             $tables[] = $grid;
         }
 
+        $fields = [];
+        foreach ($analyzeResult['documents'][0]['fields'] ?? [] as $fieldName => $fieldData) {
+            $value = $fieldData['valueString']
+                  ?? $fieldData['content']
+                  ?? (isset($fieldData['valueNumber']) ? (string) $fieldData['valueNumber'] : null)
+                  ?? (isset($fieldData['valueDate'])   ? $fieldData['valueDate']             : null)
+                  ?? null;
+            if ($value !== null) {
+                $fields[$fieldName] = $value;
+            }
+            if (isset($fieldData['valueArray'])) {
+                $items = [];
+                foreach ($fieldData['valueArray'] as $item) {
+                    $itemFields = [];
+                    foreach ($item['valueObject'] ?? [] as $k => $v) {
+                        $itemFields[$k] = $v['valueString'] ?? $v['content'] ?? (string)($v['valueNumber'] ?? '');
+                    }
+                    if (!empty($itemFields)) $items[] = $itemFields;
+                }
+                if (!empty($items)) $fields[$fieldName] = $items;
+            }
+        }
+
         return [
             'page_count' => $pageCount,
             'content'    => $content,
             'paragraphs' => $paragraphs,
             'tables'     => $tables,
+            'fields'     => $fields,
         ];
     }
 }
