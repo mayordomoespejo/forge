@@ -20,6 +20,7 @@ class LanguageService
      *   opinions: array<int, array{target: string, sentiment: string, assessments: string[]}>,
      *   key_phrases: string[],
      *   entities: array<int, array{text: string, category: string}>,
+     *   entity_links: array<int, array{name: string, url: string, source: string, score: float, match: string}>,
      *   language: string,
      *   language_confidence: float
      * }
@@ -33,6 +34,7 @@ class LanguageService
             'keyPhrases' => '/text/analytics/v3.1/keyPhrases',
             'entities'   => '/text/analytics/v3.1/entities/recognition/general',
             'languages'  => '/text/analytics/v3.1/languages',
+            'linking'    => '/text/analytics/v3.1/entities/linking',
         ];
 
         $multi   = curl_multi_init();
@@ -99,6 +101,17 @@ class LanguageService
             $rawEntities
         );
 
+        $linkedEntities = array_map(
+            fn($e) => [
+                'name'   => $e['name']       ?? '',
+                'url'    => $e['url']        ?? '',
+                'source' => $e['dataSource'] ?? 'Wikipedia',
+                'score'  => (float) ($e['matches'][0]['confidenceScore'] ?? 0.0),
+                'match'  => $e['matches'][0]['text'] ?? '',
+            ],
+            $results['linking']['documents'][0]['entities'] ?? []
+        );
+
         $langDoc  = $results['languages']['documents'][0]['detectedLanguage'] ?? [];
         $langName = $langDoc['name'] ?? 'Unknown';
         $langConf = (float) ($langDoc['confidenceScore'] ?? 0.0);
@@ -113,6 +126,7 @@ class LanguageService
             'opinions'            => $opinions,
             'key_phrases'         => $phrases,
             'entities'            => $mappedEntities,
+            'entity_links'        => $linkedEntities,
             'language'            => $langName,
             'language_confidence' => $langConf,
         ];
