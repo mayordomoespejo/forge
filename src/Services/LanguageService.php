@@ -17,6 +17,7 @@ class LanguageService
      * @return array{
      *   sentiment: string,
      *   sentiment_scores: array{positive: float, neutral: float, negative: float},
+     *   opinions: array<int, array{target: string, sentiment: string, assessments: string[]}>,
      *   key_phrases: string[],
      *   entities: array<int, array{text: string, category: string}>,
      *   language: string,
@@ -28,7 +29,7 @@ class LanguageService
         $body = json_encode(['documents' => [['id' => '1', 'text' => $text]]]);
 
         $endpoints = [
-            'sentiment'  => '/text/analytics/v3.1/sentiment',
+            'sentiment'  => '/text/analytics/v3.1/sentiment?opinionMining=true',
             'keyPhrases' => '/text/analytics/v3.1/keyPhrases',
             'entities'   => '/text/analytics/v3.1/entities/recognition/general',
             'languages'  => '/text/analytics/v3.1/languages',
@@ -75,6 +76,21 @@ class LanguageService
         $sentLabel = $sentDoc['sentiment'] ?? 'unknown';
         $scores    = $sentDoc['confidenceScores'] ?? ['positive' => 0.0, 'neutral' => 0.0, 'negative' => 0.0];
 
+        $opinions = [];
+        foreach ($sentDoc['sentences'] ?? [] as $sentence) {
+            foreach ($sentence['opinions'] ?? [] as $opinion) {
+                $target      = $opinion['target'] ?? [];
+                $assessments = array_map(fn($a) => $a['text'] ?? '', $opinion['assessments'] ?? []);
+                if (!empty($target['text'])) {
+                    $opinions[] = [
+                        'target'      => $target['text'] ?? '',
+                        'sentiment'   => $target['sentiment'] ?? '',
+                        'assessments' => $assessments,
+                    ];
+                }
+            }
+        }
+
         $phrases = $results['keyPhrases']['documents'][0]['keyPhrases'] ?? [];
 
         $rawEntities    = $results['entities']['documents'][0]['entities'] ?? [];
@@ -94,6 +110,7 @@ class LanguageService
                 'neutral'  => (float) ($scores['neutral']  ?? 0.0),
                 'negative' => (float) ($scores['negative'] ?? 0.0),
             ],
+            'opinions'            => $opinions,
             'key_phrases'         => $phrases,
             'entities'            => $mappedEntities,
             'language'            => $langName,
