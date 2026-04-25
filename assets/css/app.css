@@ -784,3 +784,38 @@ a:hover { text-decoration: underline; }
     line-height: 1.7;
     color: var(--text);
 }
+
+/* ── Audio type badge ───────────────────────────────────────── */
+.type-audio { color: #34d399; border-color: rgba(52,211,153,0.3); background: rgba(52,211,153,0.08); }
+
+/* ── Safety warning ─────────────────────────────────────────── */
+.safety-warning {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: var(--radius-sm);
+    padding: 1rem 1.25rem;
+    color: #fca5a5;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+}
+
+.safety-flags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.65rem;
+}
+
+/* ── Summary method badge ────────────────────────────────────── */
+.intel-method {
+    font-size: 0.68rem;
+    color: var(--muted-2);
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 400;
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+    border-radius: 99px;
+    padding: 0.1rem 0.45rem;
+}
