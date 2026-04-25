@@ -217,6 +217,9 @@
         const tags = document.querySelectorAll('.tag');
         if (tags.length > 0) return Array.from(tags).map(t => t.innerText).join(', ');
 
+        const summary = document.querySelector('.summary-text');
+        if (summary) return summary.innerText;
+
         return '';
     }
 
