@@ -716,3 +716,71 @@ a:hover { text-decoration: underline; }
     color: #e5e5e5;
     white-space: pre-wrap;
 }
+
+/* ── Intelligence Report ─────────────────────────────────── */
+.intelligence-section { border-top: 1px solid var(--border); }
+
+.intel-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.intel-block:last-child { border-bottom: none; }
+
+.intel-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.intel-confidence {
+    font-size: 0.7rem;
+    font-weight: 400;
+    color: var(--accent);
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.tag-pii {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+}
+
+.pii-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--negative);
+    flex-shrink: 0;
+}
+
+.redacted-preview {
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--muted);
+    font-family: var(--mono);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.summary-text {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--text);
+}
