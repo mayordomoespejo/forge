@@ -15,6 +15,9 @@
             <span class="logo-icon">&#9650;</span>
             <span class="logo-text">Forge</span>
         </a>
+        <nav class="site-nav">
+            <a href="/history" class="nav-link">History</a>
+        </nav>
     </header>
     <main class="site-main">
         <?= $body ?>
