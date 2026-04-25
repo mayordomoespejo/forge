@@ -15,6 +15,22 @@ $error    = $result['error']    ?? null;
     </div>
 
     <div class="results-columns">
+        <?php
+        $pipeline = $result['pipeline'] ?? [];
+        $safetyBlocked = $pipeline['blocked'] ?? false;
+        $safetyFlags   = $pipeline['safety']['flags'] ?? [];
+        if ($safetyBlocked): ?>
+        <div class="safety-warning">
+            <strong>Content blocked</strong> — This content was flagged by the safety filter and has not been processed.
+            <?php if (!empty($safetyFlags)): ?>
+            <div class="safety-flags">
+                <?php foreach ($safetyFlags as $flag): ?>
+                <span class="tag tag-pii"><?= htmlspecialchars($flag['category']) ?> (severity <?= (int)$flag['severity'] ?>)</span>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
         <div class="analysis-panel">
             <h2 class="panel-title">Analysis</h2>
 
@@ -76,6 +92,27 @@ $error    = $result['error']    ?? null;
                         <li class="entity-item">
                             <span class="entity-text"><?= htmlspecialchars($entity['text']) ?></span>
                             <span class="entity-cat"><?= htmlspecialchars($entity['category']) ?></span>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+                <?php endif; ?>
+
+                <?php
+                $opinions = $analysis['opinions'] ?? [];
+                if (!empty($opinions)): ?>
+                <div class="section">
+                    <h3 class="section-title">Opinion Mining</h3>
+                    <ul class="entity-list">
+                        <?php foreach ($opinions as $op): ?>
+                        <li class="entity-item">
+                            <span class="entity-text"><?= htmlspecialchars($op['target']) ?></span>
+                            <div style="display:flex;gap:0.4rem;align-items:center;">
+                                <?php if (!empty($op['assessments'])): ?>
+                                <span class="entity-cat"><?= htmlspecialchars(implode(', ', $op['assessments'])) ?></span>
+                                <?php endif; ?>
+                                <span class="badge badge-sentiment badge-<?= htmlspecialchars($op['sentiment']) ?>"><?= htmlspecialchars(ucfirst($op['sentiment'])) ?></span>
+                            </div>
                         </li>
                         <?php endforeach; ?>
                     </ul>
@@ -292,6 +329,84 @@ $error    = $result['error']    ?? null;
                 <?php endif; ?>
                 <?php endif; ?>
 
+            <?php elseif ($type === 'audio'): ?>
+                <?php
+                $transcript   = $result['content']  ?? '';
+                $langAnalysis = $result['analysis'] ?? [];
+                $sentiment    = $langAnalysis['sentiment']           ?? '';
+                $scores       = $langAnalysis['sentiment_scores']    ?? [];
+                $phrases      = $langAnalysis['key_phrases']         ?? [];
+                $entities     = $langAnalysis['entities']            ?? [];
+                $language     = $langAnalysis['language']            ?? '';
+                $langConf     = $langAnalysis['language_confidence'] ?? 0.0;
+                $opinions     = $langAnalysis['opinions']            ?? [];
+                ?>
+
+                <div class="meta-row">
+                    <span class="badge badge-lang">
+                        <?= htmlspecialchars($language ?: 'Unknown') ?>
+                        <?php if ($langConf > 0): ?>
+                        <span class="badge-sub"><?= round($langConf * 100) ?>%</span>
+                        <?php endif; ?>
+                    </span>
+                    <?php if ($sentiment): ?>
+                    <span class="badge badge-sentiment badge-<?= htmlspecialchars($sentiment) ?>">
+                        <?= htmlspecialchars(ucfirst($sentiment)) ?>
+                    </span>
+                    <?php endif; ?>
+                </div>
+
+                <?php if ($transcript): ?>
+                <div class="section">
+                    <h3 class="section-title">Transcript</h3>
+                    <div class="extracted-text"><?= nl2br(htmlspecialchars($transcript)) ?></div>
+                </div>
+                <?php endif; ?>
+
+                <?php if (!empty($phrases)): ?>
+                <div class="section">
+                    <h3 class="section-title">Key phrases</h3>
+                    <div class="tag-cloud">
+                        <?php foreach ($phrases as $phrase): ?>
+                        <span class="tag"><?= htmlspecialchars($phrase) ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if (!empty($entities)): ?>
+                <div class="section">
+                    <h3 class="section-title">Entities</h3>
+                    <ul class="entity-list">
+                        <?php foreach ($entities as $entity): ?>
+                        <li class="entity-item">
+                            <span class="entity-text"><?= htmlspecialchars($entity['text']) ?></span>
+                            <span class="entity-cat"><?= htmlspecialchars($entity['category']) ?></span>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+                <?php endif; ?>
+
+                <?php if (!empty($opinions)): ?>
+                <div class="section">
+                    <h3 class="section-title">Opinion Mining</h3>
+                    <ul class="entity-list">
+                        <?php foreach ($opinions as $op): ?>
+                        <li class="entity-item">
+                            <span class="entity-text"><?= htmlspecialchars($op['target']) ?></span>
+                            <div style="display:flex;gap:0.4rem;align-items:center;">
+                                <?php if (!empty($op['assessments'])): ?>
+                                <span class="entity-cat"><?= htmlspecialchars(implode(', ', $op['assessments'])) ?></span>
+                                <?php endif; ?>
+                                <span class="badge badge-sentiment badge-<?= htmlspecialchars($op['sentiment']) ?>"><?= htmlspecialchars(ucfirst($op['sentiment'])) ?></span>
+                            </div>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+                <?php endif; ?>
+
             <?php else: ?>
                 <p class="muted">No analysis data available.</p>
             <?php endif; ?>
@@ -336,6 +451,8 @@ $error    = $result['error']    ?? null;
                     <span class="intel-label">
                         Summary
                         <span class="intel-confidence"><?= round($pipConf * 100) ?>% confidence</span>
+                        <?php $method = $pipeline['method'] ?? 'abstractive'; ?>
+                        <span class="intel-method"><?= $method === 'extractive' ? 'Azure extractive' : 'AI generated' ?></span>
                     </span>
                     <p class="summary-text"><?= htmlspecialchars($pipSummary) ?></p>
                 </div>
