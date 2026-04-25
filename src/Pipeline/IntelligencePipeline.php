@@ -4,30 +4,39 @@ declare(strict_types=1);
 
 namespace Forge\Pipeline;
 
+use Forge\Services\ContentSafetyService;
 use Forge\Services\PiiService;
+use Forge\Services\SearchService;
 use Forge\Services\SummaryService;
 
 class IntelligencePipeline
 {
-    private PiiService     $pii;
-    private SummaryService $summary;
+    private ContentSafetyService $safety;
+    private PiiService           $pii;
+    private SearchService        $search;
+    private SummaryService       $summary;
 
     public function __construct()
     {
+        $this->safety  = new ContentSafetyService();
         $this->pii     = new PiiService();
+        $this->search  = new SearchService();
         $this->summary = new SummaryService();
     }
 
     /**
      * @param  array<int, array{text: string, category: string}> $existingEntities
      * @return array{
+     *   blocked:    bool,
+     *   safety:     array{safe: bool, flags: array<int, array{category: string, severity: int}>},
      *   entities:   array<int, array{text: string, category: string}>,
      *   redacted:   string,
      *   pii_found:  array<int, array{text: string, category: string}>,
      *   consistent: bool,
      *   confidence: float,
      *   reason:     string,
-     *   summary:    string|null
+     *   summary:    string|null,
+     *   method:     string
      * }
      */
     public function run(string $text, array $existingEntities = []): array
@@ -36,6 +45,8 @@ class IntelligencePipeline
 
         if ($text === '') {
             return [
+                'blocked'    => false,
+                'safety'     => ['safe' => true, 'flags' => []],
                 'entities'   => [],
                 'redacted'   => '',
                 'pii_found'  => [],
@@ -43,6 +54,24 @@ class IntelligencePipeline
                 'confidence' => 0.0,
                 'reason'     => 'No content to process.',
                 'summary'    => null,
+                'method'     => 'abstractive',
+            ];
+        }
+
+        // Safety gate — check text content
+        $safetyResult = $this->safety->analyzeText($text);
+        if (!$safetyResult['safe']) {
+            return [
+                'blocked'    => true,
+                'safety'     => $safetyResult,
+                'entities'   => [],
+                'redacted'   => '',
+                'pii_found'  => [],
+                'consistent' => false,
+                'confidence' => 0.0,
+                'reason'     => 'Content blocked by safety filter.',
+                'summary'    => null,
+                'method'     => 'abstractive',
             ];
         }
 
@@ -60,10 +89,12 @@ class IntelligencePipeline
         try {
             $report = $this->summary->process($censored['redacted_text'], $entities);
         } catch (\Throwable) {
-            $report = ['consistent' => false, 'confidence' => 0.0, 'reason' => 'Summary failed.', 'summary' => null];
+            $report = ['consistent' => false, 'confidence' => 0.0, 'reason' => 'Summary failed.', 'summary' => null, 'method' => 'abstractive'];
         }
 
         return [
+            'blocked'    => false,
+            'safety'     => ['safe' => true, 'flags' => []],
             'entities'   => $entities,
             'redacted'   => $censored['redacted_text'],
             'pii_found'  => $censored['pii_found'],
@@ -71,6 +102,7 @@ class IntelligencePipeline
             'confidence' => $report['confidence'],
             'reason'     => $report['reason'],
             'summary'    => $report['summary'],
+            'method'     => $report['method'] ?? 'abstractive',
         ];
     }
 }
