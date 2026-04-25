@@ -3,16 +3,20 @@
 namespace Forge;
 
 use Forge\Services\ChatService;
-use Forge\Services\LanguageService;
 use Forge\Services\DocumentService;
+use Forge\Services\LanguageService;
+use Forge\Services\SearchService;
+use Forge\Services\SpeechService;
 use Forge\Pipeline\IntelligencePipeline;
 
 class ContentAnalyzer
 {
-    private ChatService $chat;
-    private LanguageService $language;
-    private DocumentService $document;
+    private ChatService          $chat;
+    private LanguageService      $language;
+    private DocumentService      $document;
     private IntelligencePipeline $pipeline;
+    private SearchService        $search;
+    private SpeechService        $speech;
 
     public function __construct()
     {
@@ -20,18 +24,20 @@ class ContentAnalyzer
         $this->language = new LanguageService();
         $this->document = new DocumentService();
         $this->pipeline = new IntelligencePipeline();
+        $this->search   = new SearchService();
+        $this->speech   = new SpeechService();
     }
 
     /**
-     * @param  string $type     'text' | 'image' | 'document'
+     * @param  string $type     'text' | 'image' | 'document' | 'audio'
      * @param  string $content  Plain text (for type=text)
-     * @param  string $filePath Absolute path to file (for type=image|document)
+     * @param  string $filePath Absolute path to file (for type=image|document|audio)
      * @return array<string, mixed>
      */
     public function analyze(string $type, string $content = '', string $filePath = ''): array
     {
         try {
-            return match($type) {
+            $result = match($type) {
                 'text'     => (function () use ($content) {
                     $result = [
                         'type'     => 'text',
@@ -47,8 +53,17 @@ class ContentAnalyzer
                 })(),
                 'image'    => $this->analyzeImage($filePath),
                 'document' => $this->analyzeDocument($filePath),
+                'audio'    => $this->analyzeAudio($filePath),
                 default    => throw new \InvalidArgumentException("Unknown type: {$type}"),
             };
+
+            if (!empty($result['pipeline']['summary'])) {
+                try {
+                    $this->search->save(uniqid('forge_', true), $result);
+                } catch (\Throwable) {}
+            }
+
+            return $result;
         } catch (\Throwable $e) {
             return [
                 'type'  => $type,
@@ -125,5 +140,32 @@ class ContentAnalyzer
         }
 
         return $result;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function analyzeAudio(string $filePath): array
+    {
+        $transcript = $this->speech->transcribe($filePath);
+        $langAnalysis = [];
+        if ($transcript !== '') {
+            try {
+                $langAnalysis = $this->language->analyze($transcript);
+            } catch (\Throwable) {}
+        }
+        $pipeline = [];
+        if ($transcript !== '') {
+            try {
+                $pipeline = $this->pipeline->run($transcript, $langAnalysis['entities'] ?? []);
+            } catch (\Throwable) {}
+        }
+        return [
+            'type'     => 'audio',
+            'file'     => basename($filePath),
+            'content'  => $transcript,
+            'analysis' => $langAnalysis,
+            'pipeline' => $pipeline,
+        ];
     }
 }
