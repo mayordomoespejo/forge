@@ -2,6 +2,14 @@
 
 declare(strict_types=1);
 
+// Let the built-in PHP server serve static files directly
+if (PHP_SAPI === 'cli-server') {
+    $file = __DIR__ . parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    if (is_file($file)) {
+        return false;
+    }
+}
+
 session_start();
 
 require_once __DIR__ . '/vendor/autoload.php';
@@ -59,6 +67,16 @@ if ($uri === '/' && $method === 'GET') {
 
     $result = $_SESSION['result'];
     require __DIR__ . '/views/results.php';
+
+} elseif (str_starts_with($uri, '/ajax/') && $method === 'POST') {
+
+    $script = __DIR__ . $uri . '.php';
+    if (is_file($script)) {
+        require $script;
+    } else {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'error' => 'Endpoint not found.']);
+    }
 
 } else {
     http_response_code(404);
