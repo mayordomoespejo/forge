@@ -11,6 +11,7 @@ ob_start();
         <div class="tab-bar">
             <button class="tab-btn active" data-tab="file">File upload</button>
             <button class="tab-btn" data-tab="text">Paste text</button>
+            <button class="tab-btn" data-tab="audio">Audio</button>
         </div>
 
         <form id="analyze-form" action="/analyze" method="POST" enctype="multipart/form-data">
@@ -43,6 +44,25 @@ ob_start();
                     placeholder="Paste your text here - articles, reviews, documents, code..."
                     rows="10"
                 ></textarea>
+            </div>
+
+            <div class="tab-panel hidden" id="tab-audio">
+                <div class="drop-zone" id="drop-zone-audio">
+                    <input type="file" name="file" id="audio-input"
+                           accept=".mp3,.wav,.ogg,.flac,.m4a,.webm"
+                           class="file-input-hidden">
+                    <div class="drop-zone-content" id="drop-zone-audio-content">
+                        <div class="drop-icon">&#9654;</div>
+                        <p class="drop-primary">Drag &amp; drop an audio file</p>
+                        <p class="drop-secondary">or <label for="audio-input" class="browse-link">browse to upload</label></p>
+                        <p class="drop-hint">MP3, WAV, OGG, FLAC &mdash; max ~60 seconds</p>
+                    </div>
+                    <div class="drop-zone-selected hidden" id="drop-zone-audio-selected">
+                        <div class="selected-icon">&#10003;</div>
+                        <p class="selected-name" id="audio-selected-name"></p>
+                        <button type="button" class="remove-file-btn" id="remove-audio">&#10005; Remove</button>
+                    </div>
+                </div>
             </div>
 
             <button type="submit" class="submit-btn" id="submit-btn">
