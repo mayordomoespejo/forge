@@ -25,6 +25,17 @@ if ($uri === '/' && $method === 'GET') {
 
 } elseif ($uri === '/analyze' && $method === 'POST') {
 
+    $rateLimiter = new Forge\Services\RateLimiter(20, 3600);
+    $clientIp    = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
+    if (!$rateLimiter->allow($clientIp)) {
+        $_SESSION['result'] = [
+            'type'  => 'error',
+            'error' => 'Rate limit exceeded. You can analyze up to 20 files per hour. Please try again later.',
+        ];
+        header('Location: /results');
+        exit;
+    }
+
     $analyzer = new Forge\ContentAnalyzer();
 
     try {
