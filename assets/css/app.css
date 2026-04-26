@@ -939,3 +939,110 @@ a:hover { text-decoration: underline; }
     line-height: 1.6;
     margin: 0;
 }
+
+/* ── Progress overlay ────────────────────────────────────────── */
+.progress-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 10, 10, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.progress-box {
+    background: var(--surface);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius);
+    padding: 2rem 2.5rem;
+    min-width: 280px;
+}
+
+.progress-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 1.25rem;
+}
+
+.progress-steps { list-style: none; display: flex; flex-direction: column; gap: 0.65rem; }
+
+.progress-step {
+    font-size: 0.9rem;
+    color: var(--muted-2);
+    padding-left: 1.4rem;
+    position: relative;
+    transition: color 0.3s;
+}
+
+.progress-step::before {
+    content: '○';
+    position: absolute;
+    left: 0;
+    font-size: 0.75rem;
+    transition: content 0.3s;
+}
+
+.progress-step--active {
+    color: var(--accent);
+}
+
+.progress-step--active::before { content: '◉'; color: var(--accent); }
+
+.progress-step--done {
+    color: var(--positive);
+}
+
+.progress-step--done::before { content: '✓'; color: var(--positive); }
+
+/* ── TTS button ──────────────────────────────────────────────── */
+.tts-btn {
+    margin-top: 0.5rem;
+    padding: 0.35rem 0.875rem;
+    background: transparent;
+    border: 1px solid var(--border-2);
+    border-radius: 99px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+}
+
+.tts-btn:hover { color: var(--accent); border-color: var(--accent); }
+.tts-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Medical toggle ──────────────────────────────────────────── */
+.medical-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem 1.5rem 0;
+    cursor: pointer;
+}
+
+.medical-toggle input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; }
+
+.medical-toggle-label {
+    font-size: 0.875rem;
+    color: var(--text);
+    font-weight: 500;
+}
+
+.medical-toggle-hint {
+    font-size: 0.78rem;
+    color: var(--muted-2);
+}
+
+/* ── Healthcare entity category ──────────────────────────────── */
+.entity-cat--health {
+    background: rgba(52, 211, 153, 0.1);
+    border-color: rgba(52, 211, 153, 0.3);
+    color: #34d399;
+}
+
+/* ── Video type badge ────────────────────────────────────────── */
+.type-video { color: #c084fc; border-color: rgba(192,132,252,0.3); background: rgba(192,132,252,0.08); }
