@@ -20,7 +20,12 @@ class TtsService
     /**
      * Converts text to MP3 audio bytes using Azure Speech TTS.
      *
-     * @throws \RuntimeException
+     * The text is wrapped in an SSML document and sent to the Azure Cognitive
+     * Services TTS endpoint. Returns the raw MP3 binary string.
+     *
+     * @param  string $text Plain text to synthesise (truncated to 3000 characters)
+     * @return string       Raw MP3 audio bytes
+     * @throws \RuntimeException when the Speech key is absent or the API call fails
      */
     public function synthesize(string $text): string
     {

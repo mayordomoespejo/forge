@@ -18,9 +18,12 @@ class JobQueue
     }
 
     /**
-     * Enqueues a new job and returns the job ID.
+     * Enqueues a new job and returns the generated job ID.
      *
-     * @param array<string, mixed> $options
+     * @param  string               $type     Job type identifier (e.g. 'audio', 'video', 'document')
+     * @param  string               $filePath Absolute path to the file to process
+     * @param  array<string, mixed> $options  Additional processing options forwarded to the worker
+     * @return string                         Unique job ID (prefixed with 'job_')
      */
     public function enqueue(string $type, string $filePath, array $options = []): string
     {
@@ -44,9 +47,11 @@ class JobQueue
     }
 
     /**
-     * Returns the next pending job and moves it to processing.
+     * Claims the oldest pending job and moves it to the processing state.
      *
-     * @return array<string, mixed>|null
+     * Returns null when the queue is empty.
+     *
+     * @return array<string, mixed>|null Job data array, or null if queue is empty
      */
     public function dequeue(): ?array
     {
@@ -59,8 +64,8 @@ class JobQueue
         if (!is_array($job)) return null;
 
         unlink($file);
-        $job['status']        = 'processing';
-        $job['started_at']    = date('c');
+        $job['status']     = 'processing';
+        $job['started_at'] = date('c');
 
         file_put_contents(
             $this->baseDir . '/processing/' . $job['id'] . '.json',
@@ -72,7 +77,10 @@ class JobQueue
     }
 
     /**
-     * @param array<string, mixed> $result
+     * Marks a processing job as completed and stores its result.
+     *
+     * @param string               $jobId  Job identifier returned by enqueue()
+     * @param array<string, mixed> $result Analysis result to persist alongside the job
      */
     public function complete(string $jobId, array $result): void
     {
@@ -94,6 +102,12 @@ class JobQueue
         );
     }
 
+    /**
+     * Marks a processing job as failed and records the error message.
+     *
+     * @param string $jobId Job identifier returned by enqueue()
+     * @param string $error Human-readable error description
+     */
     public function fail(string $jobId, string $error): void
     {
         $procFile = $this->baseDir . '/processing/' . $jobId . '.json';
@@ -115,7 +129,10 @@ class JobQueue
     }
 
     /**
-     * @return array<string, mixed>|null
+     * Returns the current state of a job, searching all status directories.
+     *
+     * @param  string                    $jobId Job identifier returned by enqueue()
+     * @return array<string, mixed>|null        Job data array, or null if not found
      */
     public function status(string $jobId): ?array
     {
@@ -128,6 +145,11 @@ class JobQueue
         return null;
     }
 
+    /**
+     * Returns the number of jobs currently waiting in the pending queue.
+     *
+     * @return int Count of pending jobs
+     */
     public function pendingCount(): int
     {
         return count(glob($this->baseDir . '/pending/*.json') ?: []);

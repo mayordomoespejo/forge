@@ -15,14 +15,20 @@ class ComputerVisionService
         $this->key      = $_ENV['AZURE_VISION_KEY'] ?? '';
     }
 
+    /**
+     * Returns true if Computer Vision credentials are configured.
+     */
     public function isConfigured(): bool
     {
         return $this->endpoint !== '' && $this->key !== '';
     }
 
     /**
-     * Analyzes an image with Computer Vision 4.0 — OCR, caption, tags.
+     * Analyses an image using Azure Computer Vision 4.0 — OCR, dense caption, and tags.
      *
+     * Returns safe default values when credentials are absent or the file cannot be read.
+     *
+     * @param  string $imagePath Absolute path to the image file
      * @return array{ocr_text: string, caption: string, caption_confidence: float, tags: string[]}
      */
     public function analyze(string $imagePath): array
@@ -64,7 +70,7 @@ class ComputerVisionService
 
         $result = json_decode($raw, true) ?? [];
 
-        // OCR — concatenate all detected text
+        // OCR — concatenate all detected text lines
         $ocrLines = [];
         foreach ($result['readResult']['blocks'] ?? [] as $block) {
             foreach ($block['lines'] ?? [] as $line) {

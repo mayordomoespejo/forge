@@ -16,6 +16,13 @@ class HealthcareNerService
     }
 
     /**
+     * Extracts healthcare named entities from clinical or medical text.
+     *
+     * Submits an async job to Azure AI Language Healthcare NER and polls until
+     * the result is available. Returns an empty array when credentials are absent,
+     * the text is empty, or the API returns an error.
+     *
+     * @param  string $text Clinical or medical text (truncated to 5000 characters)
      * @return array<int, array{text: string, category: string, confidence: float}>
      */
     public function analyze(string $text): array

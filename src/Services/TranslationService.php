@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Forge\Services;
 
 use GuzzleHttp\Client;
@@ -7,10 +9,11 @@ use GuzzleHttp\Exception\GuzzleException;
 
 class TranslationService
 {
+    private const ENDPOINT = 'https://api.cognitive.microsofttranslator.com';
+
     private Client $client;
     private string $key;
     private string $region;
-    private string $endpoint = 'https://api.cognitive.microsofttranslator.com';
 
     public function __construct()
     {
@@ -18,7 +21,7 @@ class TranslationService
         $this->region = $_ENV['AZURE_TRANSLATOR_REGION'] ?? 'eastus';
 
         $this->client = new Client([
-            'base_uri' => $this->endpoint,
+            'base_uri' => self::ENDPOINT,
             'timeout'  => 20,
             'headers'  => [
                 'Ocp-Apim-Subscription-Key'    => $this->key,
@@ -29,9 +32,15 @@ class TranslationService
     }
 
     /**
-     * Translate text to the given language code (e.g. 'en', 'es', 'fr', 'de', 'pt', 'it', 'ja', 'zh-Hans').
+     * Translates text into the given target language.
      *
-     * @throws \RuntimeException
+     * Returns the original text unchanged when credentials are absent or the input is empty.
+     * Supported language codes include: en, es, fr, de, pt, it, ja, zh-Hans.
+     *
+     * @param  string $text           Text to translate
+     * @param  string $targetLanguage BCP-47 language tag (e.g. 'en', 'es', 'fr')
+     * @return string                 Translated text, or original text on unconfigured/empty input
+     * @throws \RuntimeException      when the API call fails
      */
     public function translate(string $text, string $targetLanguage): string
     {

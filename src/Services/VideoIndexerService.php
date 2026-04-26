@@ -6,10 +6,11 @@ namespace Forge\Services;
 
 class VideoIndexerService
 {
+    private const BASE_URL = 'https://api.videoindexer.ai';
+
     private string $accountId;
     private string $location;
     private string $apiKey;
-    private string $baseUrl = 'https://api.videoindexer.ai';
 
     public function __construct()
     {
@@ -18,14 +19,23 @@ class VideoIndexerService
         $this->apiKey    = $_ENV['AZURE_VIDEO_INDEXER_API_KEY']     ?? '';
     }
 
+    /**
+     * Returns true if Video Indexer credentials are configured.
+     */
     public function isConfigured(): bool
     {
         return $this->accountId !== '' && $this->apiKey !== '';
     }
 
     /**
+     * Uploads and indexes a video file, returning extracted insights.
+     *
+     * Obtains an access token, uploads the file, polls until indexing completes,
+     * and parses the resulting insights into a structured array.
+     *
+     * @param  string $filePath Absolute path to the video file
      * @return array{transcript: string, topics: string[], keywords: string[], duration: string}
-     * @throws \RuntimeException
+     * @throws \RuntimeException when the service is unconfigured, upload fails, or indexing times out
      */
     public function index(string $filePath): array
     {
@@ -44,7 +54,7 @@ class VideoIndexerService
     {
         $url = sprintf(
             '%s/auth/%s/Accounts/%s/AccessToken?allowEdit=true',
-            $this->baseUrl, $this->location, $this->accountId
+            self::BASE_URL, $this->location, $this->accountId
         );
 
         $ch = curl_init($url);
@@ -69,7 +79,7 @@ class VideoIndexerService
         $name = basename($filePath);
         $url  = sprintf(
             '%s/%s/Accounts/%s/Videos?accessToken=%s&name=%s&privacy=Private&videoUrl=',
-            $this->baseUrl, $this->location, $this->accountId,
+            self::BASE_URL, $this->location, $this->accountId,
             urlencode($token), urlencode($name)
         );
 
@@ -108,7 +118,7 @@ class VideoIndexerService
 
             $url = sprintf(
                 '%s/%s/Accounts/%s/Videos/%s/Index?accessToken=%s',
-                $this->baseUrl, $this->location, $this->accountId,
+                self::BASE_URL, $this->location, $this->accountId,
                 $videoId, urlencode($token)
             );
 

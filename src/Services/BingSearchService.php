@@ -6,21 +6,31 @@ namespace Forge\Services;
 
 class BingSearchService
 {
+    private const ENDPOINT = 'https://api.bing.microsoft.com/v7.0/search';
+
     private string $key;
-    private string $endpoint = 'https://api.bing.microsoft.com/v7.0/search';
 
     public function __construct()
     {
         $this->key = $_ENV['BING_SEARCH_KEY'] ?? '';
     }
 
+    /**
+     * Returns true if a Bing Search API key is configured.
+     */
     public function isConfigured(): bool
     {
         return $this->key !== '';
     }
 
     /**
-     * Returns top search results as a formatted context string.
+     * Searches the web and returns the top results as a formatted context string.
+     *
+     * Returns an empty string when the service is unconfigured or the query is blank.
+     *
+     * @param  string $query Search query (truncated to 200 characters)
+     * @param  int    $count Maximum number of results to include
+     * @return string        Formatted multi-line string with result names and snippets, or ''
      */
     public function search(string $query, int $count = 3): string
     {
@@ -28,7 +38,7 @@ class BingSearchService
             return '';
         }
 
-        $url = $this->endpoint . '?' . http_build_query([
+        $url = self::ENDPOINT . '?' . http_build_query([
             'q'     => mb_substr($query, 0, 200),
             'count' => $count,
             'mkt'   => 'en-US',

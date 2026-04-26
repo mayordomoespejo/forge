@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Forge;
 
 use Forge\Services\AppInsightsService;
@@ -16,16 +18,16 @@ use Forge\Pipeline\IntelligencePipeline;
 
 class ContentAnalyzer
 {
-    private ChatService          $chat;
-    private LanguageService      $language;
-    private DocumentService      $document;
-    private IntelligencePipeline $pipeline;
-    private SearchService        $search;
-    private SpeechService        $speech;
-    private HealthcareNerService $healthcare;
-    private VideoIndexerService  $video;
-    private BlobStorageService   $blob;
-    private AppInsightsService   $insights;
+    private ChatService           $chat;
+    private LanguageService       $language;
+    private DocumentService       $document;
+    private IntelligencePipeline  $pipeline;
+    private SearchService         $search;
+    private SpeechService         $speech;
+    private HealthcareNerService  $healthcare;
+    private VideoIndexerService   $video;
+    private BlobStorageService    $blob;
+    private AppInsightsService    $insights;
     private ComputerVisionService $vision;
 
     public function __construct()
@@ -44,18 +46,24 @@ class ContentAnalyzer
     }
 
     /**
-     * @param  string $type     'text' | 'image' | 'document' | 'audio' | 'video'
-     * @param  string $content  Plain text (for type=text)
-     * @param  string $filePath Absolute path to file (for type=image|document|audio|video)
-     * @param  array  $options  Optional parameters: doc_model, speech_language, medical_mode, query_fields
-     * @return array<string, mixed>
+     * Analyses content of any supported type and returns structured insights.
+     *
+     * Dispatches to the appropriate private method based on $type, runs the
+     * intelligence pipeline, optionally persists the result to Azure AI Search
+     * and Blob Storage, and tracks telemetry via Application Insights.
+     *
+     * @param  string               $type     Content type: 'text' | 'image' | 'document' | 'audio' | 'video'
+     * @param  string               $content  Plain text input (used when type = 'text')
+     * @param  string               $filePath Absolute path to the file (used when type != 'text')
+     * @param  array<string, mixed> $options  Optional parameters: doc_model, speech_language, medical_mode, query_fields
+     * @return array<string, mixed>           Structured analysis result, or ['type' => ..., 'error' => ...] on failure
      */
     public function analyze(string $type, string $content = '', string $filePath = '', array $options = []): array
     {
         try {
             $startTime = microtime(true);
 
-            $result = match($type) {
+            $result = match ($type) {
                 'text'     => (function () use ($content, $options) {
                     $langAnalysis = $this->language->analyze($content);
                     $result = [
@@ -100,9 +108,9 @@ class ContentAnalyzer
             // Track to App Insights
             $duration = round((microtime(true) - $startTime) * 1000);
             $this->insights->trackEvent('AnalysisCompleted', [
-                'type'       => $type,
-                'durationMs' => $duration,
-                'hasPipeline'=> !empty($result['pipeline']) ? 'true' : 'false',
+                'type'        => $type,
+                'durationMs'  => $duration,
+                'hasPipeline' => !empty($result['pipeline']) ? 'true' : 'false',
             ]);
 
             return $result;
@@ -165,7 +173,7 @@ class ContentAnalyzer
     {
         $docModel    = $options['doc_model']    ?? 'prebuilt-read';
         $queryFields = $options['query_fields'] ?? [];
-        $doc = $this->document->extract($filePath, $docModel, $queryFields);
+        $doc         = $this->document->extract($filePath, $docModel, $queryFields);
 
         $language = [];
         if (!empty($doc['content'])) {
@@ -202,18 +210,21 @@ class ContentAnalyzer
     {
         $language   = $options['speech_language'] ?? 'en-US';
         $transcript = $this->speech->transcribe($filePath, $language);
+
         $langAnalysis = [];
         if ($transcript !== '') {
             try {
                 $langAnalysis = $this->language->analyze($transcript);
             } catch (\Throwable) {}
         }
+
         $pipeline = [];
         if ($transcript !== '') {
             try {
                 $pipeline = $this->pipeline->run($transcript, $langAnalysis['entities'] ?? []);
             } catch (\Throwable) {}
         }
+
         return [
             'type'     => 'audio',
             'file'     => basename($filePath),
@@ -229,14 +240,17 @@ class ContentAnalyzer
     private function analyzeVideo(string $filePath, array $options = []): array
     {
         $insights = $this->video->index($filePath);
+
         $langAnalysis = [];
         if ($insights['transcript'] !== '') {
             try { $langAnalysis = $this->language->analyze($insights['transcript']); } catch (\Throwable) {}
         }
+
         $pipeline = [];
         if ($insights['transcript'] !== '') {
             try { $pipeline = $this->pipeline->run($insights['transcript'], $langAnalysis['entities'] ?? []); } catch (\Throwable) {}
         }
+
         return [
             'type'     => 'video',
             'file'     => basename($filePath),

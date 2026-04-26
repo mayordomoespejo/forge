@@ -25,7 +25,17 @@ class IntelligencePipeline
     }
 
     /**
-     * @param  array<int, array{text: string, category: string}> $existingEntities
+     * Executes the full intelligence pipeline on a piece of text.
+     *
+     * Stages (in order):
+     *  1. Safety gate  — Azure Content Safety blocks severity >= 4
+     *  2. Entity reuse — passes through pre-computed NER entities
+     *  3. PII censor   — Azure Language PII detection and redaction
+     *  4. Judge        — gpt-4o-mini consistency check
+     *  5. Summariser   — Azure extractive with gpt-4o-mini fallback
+     *
+     * @param  string                                            $text             Input text (trimmed internally)
+     * @param  array<int, array{text: string, category: string}> $existingEntities Pre-computed NER entities to reuse
      * @return array{
      *   blocked:    bool,
      *   safety:     array{safe: bool, flags: array<int, array{category: string, severity: int}>},
@@ -85,7 +95,7 @@ class IntelligencePipeline
             $censored = ['redacted_text' => $text, 'pii_found' => []];
         }
 
-        // Agents 3 + 4 — Consistency judge + Summarizer
+        // Agents 3 + 4 — Consistency judge + Summariser
         try {
             $report = $this->summary->process($censored['redacted_text'], $entities);
         } catch (\Throwable) {

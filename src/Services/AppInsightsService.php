@@ -6,14 +6,18 @@ namespace Forge\Services;
 
 class AppInsightsService
 {
+    private const ENDPOINT = 'https://dc.services.visualstudio.com/v2/track';
+
     private string $ikey;
-    private string $endpoint = 'https://dc.services.visualstudio.com/v2/track';
 
     public function __construct()
     {
         $this->ikey = $_ENV['AZURE_APPINSIGHTS_IKEY'] ?? '';
     }
 
+    /**
+     * Returns true if an Application Insights instrumentation key is configured.
+     */
     public function isConfigured(): bool
     {
         return $this->ikey !== '';
@@ -22,7 +26,10 @@ class AppInsightsService
     /**
      * Tracks a custom event (fire-and-forget, non-blocking).
      *
-     * @param array<string, string|int|float|bool> $properties
+     * Has no effect when the service is not configured.
+     *
+     * @param string                            $name       Event name shown in Application Insights
+     * @param array<string, string|int|float|bool> $properties Key-value pairs attached to the event
      */
     public function trackEvent(string $name, array $properties = []): void
     {
@@ -46,7 +53,11 @@ class AppInsightsService
     }
 
     /**
-     * Tracks an exception (fire-and-forget).
+     * Tracks an exception (fire-and-forget, non-blocking).
+     *
+     * Has no effect when the service is not configured.
+     *
+     * @param \Throwable $e The exception to report
      */
     public function trackException(\Throwable $e): void
     {
@@ -61,8 +72,8 @@ class AppInsightsService
                 'baseData' => [
                     'ver'        => 2,
                     'exceptions' => [[
-                        'typeName' => get_class($e),
-                        'message'  => $e->getMessage(),
+                        'typeName'     => get_class($e),
+                        'message'      => $e->getMessage(),
                         'hasFullStack' => false,
                     ]],
                 ],
@@ -78,7 +89,7 @@ class AppInsightsService
     private function send(array $payload): void
     {
         $body = json_encode($payload);
-        $ch   = curl_init($this->endpoint);
+        $ch   = curl_init(self::ENDPOINT);
         curl_setopt_array($ch, [
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => $body,

@@ -16,6 +16,13 @@ class PiiService
     }
 
     /**
+     * Detects and redacts personally identifiable information from the given text.
+     *
+     * Returns the original text with PII replaced by asterisks, plus a list of
+     * detected entities. Falls back to returning the original text unchanged when
+     * credentials are absent or the request fails.
+     *
+     * @param  string $text Input text to redact
      * @return array{redacted_text: string, pii_found: array<int, array{text: string, category: string}>}
      */
     public function redact(string $text): array

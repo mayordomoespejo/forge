@@ -6,7 +6,7 @@ namespace Forge\Services;
 
 class SummaryService
 {
-    private ChatService $chat;
+    private ChatService         $chat;
     private AzureSummaryService $azureSummary;
 
     public function __construct()
@@ -16,7 +16,14 @@ class SummaryService
     }
 
     /**
-     * @param  array<int, array{text: string, category: string}> $entities
+     * Runs a two-step consistency check and summarisation pipeline.
+     *
+     * Step 1 — asks gpt-4o-mini to judge whether the text is coherent enough
+     * to warrant a summary. Step 2 — if consistent, tries Azure extractive
+     * summarisation first and falls back to gpt-4o-mini abstractive summarisation.
+     *
+     * @param  string                                        $text     Content to summarise
+     * @param  array<int, array{text: string, category: string}> $entities Named entities already extracted from the text
      * @return array{consistent: bool, confidence: float, reason: string, summary: string|null, method: string}
      */
     public function process(string $text, array $entities = []): array
