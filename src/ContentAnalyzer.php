@@ -2,7 +2,10 @@
 
 namespace Forge;
 
+use Forge\Services\AppInsightsService;
+use Forge\Services\BlobStorageService;
 use Forge\Services\ChatService;
+use Forge\Services\ComputerVisionService;
 use Forge\Services\DocumentService;
 use Forge\Services\HealthcareNerService;
 use Forge\Services\LanguageService;
@@ -21,6 +24,9 @@ class ContentAnalyzer
     private SpeechService        $speech;
     private HealthcareNerService $healthcare;
     private VideoIndexerService  $video;
+    private BlobStorageService   $blob;
+    private AppInsightsService   $insights;
+    private ComputerVisionService $vision;
 
     public function __construct()
     {
@@ -32,6 +38,9 @@ class ContentAnalyzer
         $this->speech     = new SpeechService();
         $this->healthcare = new HealthcareNerService();
         $this->video      = new VideoIndexerService();
+        $this->blob       = new BlobStorageService();
+        $this->insights   = new AppInsightsService();
+        $this->vision     = new ComputerVisionService();
     }
 
     /**
@@ -44,6 +53,8 @@ class ContentAnalyzer
     public function analyze(string $type, string $content = '', string $filePath = '', array $options = []): array
     {
         try {
+            $startTime = microtime(true);
+
             $result = match($type) {
                 'text'     => (function () use ($content, $options) {
                     $langAnalysis = $this->language->analyze($content);
@@ -77,8 +88,26 @@ class ContentAnalyzer
                 } catch (\Throwable) {}
             }
 
+            // Upload to Blob Storage if configured
+            if ($filePath !== '' && $this->blob->isConfigured()) {
+                try {
+                    $blobName = uniqid('forge_', true) . '.' . pathinfo($filePath, PATHINFO_EXTENSION);
+                    $blobUrl  = $this->blob->upload($filePath, $blobName);
+                    $result['blob_url'] = $blobUrl;
+                } catch (\Throwable) {}
+            }
+
+            // Track to App Insights
+            $duration = round((microtime(true) - $startTime) * 1000);
+            $this->insights->trackEvent('AnalysisCompleted', [
+                'type'       => $type,
+                'durationMs' => $duration,
+                'hasPipeline'=> !empty($result['pipeline']) ? 'true' : 'false',
+            ]);
+
             return $result;
         } catch (\Throwable $e) {
+            $this->insights->trackException($e);
             return [
                 'type'  => $type,
                 'error' => $e->getMessage(),
@@ -93,6 +122,13 @@ class ContentAnalyzer
     {
         $imageAnalysis = $this->chat->analyzeImage($filePath);
 
+        $cvAnalysis = [];
+        if ($this->vision->isConfigured()) {
+            try {
+                $cvAnalysis = $this->vision->analyze($filePath);
+            } catch (\Throwable) {}
+        }
+
         $language = [];
         if (!empty($imageAnalysis['description'])) {
             try {
@@ -103,10 +139,11 @@ class ContentAnalyzer
         }
 
         $result = [
-            'type'     => 'image',
-            'file'     => basename($filePath),
-            'analysis' => $imageAnalysis,
-            'language' => $language,
+            'type'        => 'image',
+            'file'        => basename($filePath),
+            'analysis'    => $imageAnalysis,
+            'language'    => $language,
+            'cv_analysis' => $cvAnalysis,
         ];
 
         try {
