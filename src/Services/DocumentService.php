@@ -1,12 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Forge\Services;
 
+use Forge\Exceptions\AnalysisException;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
 class DocumentService
 {
+    private const API_VERSION        = '2023-07-31';
+    private const DEFAULT_MODEL      = 'prebuilt-read';
+    private const POLL_MAX_ATTEMPTS  = 30;
+    private const POLL_SLEEP_SECONDS = 1;
+
     private Client $client;
     private string $endpoint;
     private string $key;
@@ -26,51 +34,60 @@ class DocumentService
     }
 
     /**
+     * Extracts structured content from a document using Azure Document Intelligence.
+     *
+     * @param  string   $filePath    Absolute path to the document (PDF, JPEG, PNG, etc.)
+     * @param  string   $model       Document model to use (default: 'prebuilt-read')
+     * @param  string[] $queryFields Additional query fields for extraction (switches to 'prebuilt-layout')
      * @return array{page_count: int, content: string, paragraphs: string[], tables: array, fields: array}
-     * @throws \RuntimeException
+     * @throws AnalysisException when the file cannot be read or the Azure API returns an error
      */
-    public function extract(string $filePath, string $model = 'prebuilt-read', array $queryFields = []): array
+    public function extract(string $filePath, string $model = self::DEFAULT_MODEL, array $queryFields = []): array
     {
         try {
             $data = file_get_contents($filePath);
             if ($data === false) {
-                throw new \RuntimeException('Unable to read file: ' . $filePath);
+                throw new AnalysisException('Unable to read file: ' . $filePath);
             }
 
             $base64      = base64_encode($data);
             $requestBody = ['base64Source' => $base64];
             if (!empty($queryFields)) {
                 $requestBody['queryFields'] = $queryFields;
-                if ($model === 'prebuilt-read') {
+                if ($model === self::DEFAULT_MODEL) {
                     $model = 'prebuilt-layout';
                 }
             }
+
             $submitUrl = $this->endpoint
                 . '/formrecognizer/documentModels/' . $model . ':analyze'
-                . '?api-version=2023-07-31';
+                . '?api-version=' . self::API_VERSION;
+
             $submitResponse    = $this->client->post($submitUrl, ['json' => $requestBody]);
             $operationLocation = $submitResponse->getHeader('Operation-Location')[0] ?? null;
 
             if (!$operationLocation) {
-                throw new \RuntimeException('No Operation-Location header returned from Document Intelligence.');
+                throw new AnalysisException('No Operation-Location header returned from Document Intelligence.');
             }
 
             return $this->parseResult($this->poll($operationLocation));
-        } catch (\RuntimeException $e) {
+        } catch (AnalysisException $e) {
             throw $e;
         } catch (GuzzleException $e) {
-            throw new \RuntimeException('DocumentService error: ' . $e->getMessage(), 0, $e);
+            throw new AnalysisException('DocumentService error: ' . $e->getMessage(), $e);
         }
     }
 
     /**
+     * Polls the operation URL until the job succeeds or fails.
+     *
      * @return array<string, mixed>
-     * @throws \RuntimeException
+     * @throws AnalysisException when the analysis fails or times out
      */
     private function poll(string $operationUrl): array
     {
-        for ($i = 0; $i < 30; $i++) {
-            sleep(1);
+        for ($i = 0; $i < self::POLL_MAX_ATTEMPTS; $i++) {
+            sleep(self::POLL_SLEEP_SECONDS);
             try {
                 $response = $this->client->get($operationUrl);
                 $body     = json_decode((string) $response->getBody(), true) ?? [];
@@ -80,16 +97,19 @@ class DocumentService
                     return $body['analyzeResult'] ?? [];
                 }
                 if ($status === 'failed') {
-                    throw new \RuntimeException('Document analysis failed: ' . ($body['error']['message'] ?? 'Unknown error'));
+                    throw new AnalysisException('Document analysis failed: ' . ($body['error']['message'] ?? 'Unknown error'));
                 }
             } catch (GuzzleException $e) {
-                throw new \RuntimeException('Polling error: ' . $e->getMessage(), 0, $e);
+                throw new AnalysisException('Polling error: ' . $e->getMessage(), $e);
             }
         }
-        throw new \RuntimeException('Document analysis timed out after 30 seconds.');
+
+        throw new AnalysisException('Document analysis timed out after ' . self::POLL_MAX_ATTEMPTS . ' seconds.');
     }
 
     /**
+     * Parses the raw Azure analyze result into a structured array.
+     *
      * @param  array<string, mixed> $analyzeResult
      * @return array{page_count: int, content: string, paragraphs: string[], tables: array, fields: array}
      */
@@ -134,7 +154,7 @@ class DocumentService
                 foreach ($fieldData['valueArray'] as $item) {
                     $itemFields = [];
                     foreach ($item['valueObject'] ?? [] as $k => $v) {
-                        $itemFields[$k] = $v['valueString'] ?? $v['content'] ?? (string)($v['valueNumber'] ?? '');
+                        $itemFields[$k] = $v['valueString'] ?? $v['content'] ?? (string) ($v['valueNumber'] ?? '');
                     }
                     if (!empty($itemFields)) $items[] = $itemFields;
                 }
