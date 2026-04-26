@@ -32,6 +32,7 @@ if ($uri === '/' && $method === 'GET') {
             'doc_model'       => $_POST['doc_model']       ?? 'prebuilt-read',
             'speech_language' => $_POST['speech_language'] ?? 'en-US',
             'medical_mode'    => !empty($_POST['medical_mode']),
+            'query_fields'    => array_filter(array_map('trim', explode(',', $_POST['query_fields'] ?? ''))),
         ];
 
         if (!empty($_FILES['file']['name']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
