@@ -29,7 +29,7 @@ class DocumentService
      * @return array{page_count: int, content: string, paragraphs: string[], tables: array, fields: array}
      * @throws \RuntimeException
      */
-    public function extract(string $filePath, string $model = 'prebuilt-read'): array
+    public function extract(string $filePath, string $model = 'prebuilt-read', array $queryFields = []): array
     {
         try {
             $data = file_get_contents($filePath);
@@ -37,12 +37,18 @@ class DocumentService
                 throw new \RuntimeException('Unable to read file: ' . $filePath);
             }
 
-            $base64    = base64_encode($data);
+            $base64      = base64_encode($data);
+            $requestBody = ['base64Source' => $base64];
+            if (!empty($queryFields)) {
+                $requestBody['queryFields'] = $queryFields;
+                if ($model === 'prebuilt-read') {
+                    $model = 'prebuilt-layout';
+                }
+            }
             $submitUrl = $this->endpoint
                 . '/formrecognizer/documentModels/' . $model . ':analyze'
                 . '?api-version=2023-07-31';
-
-            $submitResponse    = $this->client->post($submitUrl, ['json' => ['base64Source' => $base64]]);
+            $submitResponse    = $this->client->post($submitUrl, ['json' => $requestBody]);
             $operationLocation = $submitResponse->getHeader('Operation-Location')[0] ?? null;
 
             if (!$operationLocation) {
