@@ -46,9 +46,9 @@ ob_start();
                         </select>
                     </div>
                 </div>
-                <div class="query-fields-wrap" style="padding: 0 1.5rem 1rem;">
+                <div style="padding: 0 1.5rem 1rem;">
                     <label class="doc-model-label" for="query-fields" style="display:block;margin-bottom:0.4rem;">
-                        Custom fields to extract <span style="font-weight:400;color:var(--muted-2);">(comma-separated, optional)</span>
+                        Custom fields <span style="font-weight:400;color:var(--muted-2);">(comma-separated, optional)</span>
                     </label>
                     <input
                         type="text"
