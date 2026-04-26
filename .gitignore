@@ -4,3 +4,7 @@ uploads/*
 !uploads/.gitkeep
 .DS_Store
 *.log
+/storage/queue/pending/
+/storage/queue/processing/
+/storage/queue/completed/
+/storage/queue/failed/
