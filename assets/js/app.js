@@ -8,6 +8,46 @@
   function $(sel, ctx) { return (ctx || document).querySelector(sel); }
   function $$(sel, ctx) { return Array.from((ctx || document).querySelectorAll(sel)); }
 
+  /* Analysis progress overlay */
+  var analyzeFormProg = $('#analyze-form');
+  if (analyzeFormProg) {
+    analyzeFormProg.addEventListener('submit', function() {
+      var overlay = document.createElement('div');
+      overlay.id = 'progress-overlay';
+      overlay.className = 'progress-overlay';
+      overlay.innerHTML = '<div class="progress-box">' +
+        '<div class="progress-title">Analyzing content</div>' +
+        '<ul class="progress-steps" id="progress-steps"></ul>' +
+        '</div>';
+      document.body.appendChild(overlay);
+
+      var steps = [
+        'Running safety check',
+        'Analyzing language and entities',
+        'Detecting PII',
+        'Generating summary',
+        'Finalizing'
+      ];
+      var delays = [0, 1200, 2800, 4500, 7000];
+      var ul = document.getElementById('progress-steps');
+
+      steps.forEach(function(step, i) {
+        var li = document.createElement('li');
+        li.className = 'progress-step progress-step--pending';
+        li.textContent = step;
+        ul.appendChild(li);
+
+        setTimeout(function() {
+          var items = ul.querySelectorAll('.progress-step');
+          if (i > 0 && items[i - 1]) {
+            items[i - 1].className = 'progress-step progress-step--done';
+          }
+          items[i].className = 'progress-step progress-step--active';
+        }, delays[i]);
+      });
+    });
+  }
+
   /* Tab switching */
   var tabBtns   = $$('.tab-btn');
   var modeInput = $('#mode-input');
@@ -218,28 +258,54 @@
     if (chatSendBtn) chatSendBtn.disabled = true;
 
     var typingBubble = appendTyping();
+    var assistantBubble = null;
 
     fetch('/ajax/chat.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: message, history: history.slice(0, -1) }),
     })
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
+      .then(function(res) {
         typingBubble.remove();
-        if (data.success && data.message) {
-          appendBubble('assistant', data.message);
-          history.push({ role: 'assistant', content: data.message });
-        } else {
-          appendBubble('assistant', data.error || 'An error occurred.');
+        assistantBubble = appendBubble('assistant', '');
+        var content = assistantBubble.querySelector('.bubble-content');
+        var accumulated = '';
+
+        var reader = res.body.getReader();
+        var decoder = new TextDecoder();
+
+        function read() {
+          return reader.read().then(function(result) {
+            if (result.done) {
+              history.push({ role: 'assistant', content: accumulated });
+              if (chatSendBtn) chatSendBtn.disabled = false;
+              if (chatInput) chatInput.focus();
+              return;
+            }
+            var chunk = decoder.decode(result.value, { stream: true });
+            var lines = chunk.split('\n');
+            lines.forEach(function(line) {
+              if (!line.startsWith('data: ')) return;
+              var data = line.slice(6).trim();
+              if (data === '[DONE]') return;
+              try {
+                var parsed = JSON.parse(data);
+                var delta = parsed.choices && parsed.choices[0] && parsed.choices[0].delta && parsed.choices[0].delta.content;
+                if (delta) {
+                  accumulated += delta;
+                  content.textContent = accumulated;
+                  scrollToBottom();
+                }
+              } catch(e) {}
+            });
+            return read();
+          });
         }
+        return read();
       })
-      .catch(function (err) {
-        typingBubble.remove();
+      .catch(function(err) {
+        if (typingBubble.parentNode) typingBubble.remove();
         appendBubble('assistant', 'Network error. Please try again.');
-        console.error('Chat error:', err);
-      })
-      .finally(function () {
         if (chatSendBtn) chatSendBtn.disabled = false;
         if (chatInput) chatInput.focus();
       });
@@ -315,4 +381,54 @@
             btn.textContent = 'Translate content';
         }
     });
+}());
+
+/* ── Text-to-speech ──────────────────────────────────────────────── */
+(function () {
+  var ttsBtn = document.getElementById('tts-btn');
+  if (!ttsBtn) return;
+
+  var audio = null;
+
+  ttsBtn.addEventListener('click', function () {
+    var summary = document.querySelector('.summary-text');
+    if (!summary) { alert('No summary to read.'); return; }
+    var text = summary.innerText.trim();
+    if (!text) { alert('No summary to read.'); return; }
+
+    if (audio && !audio.paused) {
+      audio.pause();
+      ttsBtn.textContent = 'Listen';
+      return;
+    }
+
+    ttsBtn.disabled = true;
+    ttsBtn.textContent = 'Loading...';
+
+    fetch('/ajax/tts.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: text }),
+    })
+      .then(function(res) {
+        if (!res.ok) throw new Error('TTS failed');
+        return res.blob();
+      })
+      .then(function(blob) {
+        var url = URL.createObjectURL(blob);
+        audio = new Audio(url);
+        audio.play();
+        ttsBtn.textContent = 'Stop';
+        audio.onended = function() {
+          ttsBtn.textContent = 'Listen';
+          URL.revokeObjectURL(url);
+        };
+      })
+      .catch(function(err) {
+        alert('TTS error: ' + err.message);
+      })
+      .finally(function() {
+        ttsBtn.disabled = false;
+      });
+  });
 }());
