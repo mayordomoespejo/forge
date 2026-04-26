@@ -13,6 +13,11 @@ $error    = $result['error']    ?? null;
             <?= htmlspecialchars(ucfirst($type)) ?>
         </span>
         <a href="/ajax/export.php" target="_blank" class="export-btn">Export PDF</a>
+        <?php if (!empty($result['blob_url'])): ?>
+        <a href="<?= htmlspecialchars($result['blob_url']) ?>" target="_blank" class="export-btn">
+            View stored file
+        </a>
+        <?php endif; ?>
     </div>
 
     <div class="results-columns">
@@ -159,6 +164,11 @@ $error    = $result['error']    ?? null;
                 $colors      = $analysis['colors']        ?? [];
                 $textInImage = $analysis['text_in_image'] ?? null;
                 $mood        = $analysis['mood']          ?? '';
+                $cvAnalysis  = $result['cv_analysis']         ?? [];
+                $cvCaption   = $cvAnalysis['caption']         ?? '';
+                $cvOcrText   = $cvAnalysis['ocr_text']        ?? '';
+                $cvTags      = $cvAnalysis['tags']            ?? [];
+                $cvConf      = $cvAnalysis['caption_confidence'] ?? 0.0;
                 ?>
                 <?php if ($description): ?>
                 <div class="section">
@@ -202,6 +212,34 @@ $error    = $result['error']    ?? null;
                 <div class="section">
                     <h3 class="section-title">Text in image</h3>
                     <pre class="code-block"><?= htmlspecialchars($textInImage) ?></pre>
+                </div>
+                <?php endif; ?>
+
+                <?php if ($cvCaption): ?>
+                <div class="section">
+                    <h3 class="section-title">
+                        CV Caption
+                        <span class="intel-confidence"><?= round($cvConf * 100) ?>% confidence</span>
+                    </h3>
+                    <p class="description-text"><?= htmlspecialchars($cvCaption) ?></p>
+                </div>
+                <?php endif; ?>
+
+                <?php if (!empty($cvTags)): ?>
+                <div class="section">
+                    <h3 class="section-title">CV Tags</h3>
+                    <div class="tag-cloud">
+                        <?php foreach ($cvTags as $cvTag): ?>
+                        <span class="tag"><?= htmlspecialchars($cvTag) ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if ($cvOcrText): ?>
+                <div class="section">
+                    <h3 class="section-title">Precision OCR</h3>
+                    <pre class="code-block"><?= htmlspecialchars($cvOcrText) ?></pre>
                 </div>
                 <?php endif; ?>
 
