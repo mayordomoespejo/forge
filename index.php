@@ -31,6 +31,7 @@ if ($uri === '/' && $method === 'GET') {
         $options = [
             'doc_model'       => $_POST['doc_model']       ?? 'prebuilt-read',
             'speech_language' => $_POST['speech_language'] ?? 'en-US',
+            'medical_mode'    => !empty($_POST['medical_mode']),
         ];
 
         if (!empty($_FILES['file']['name']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
@@ -45,6 +46,8 @@ if ($uri === '/' && $method === 'GET') {
                 $type = 'image';
             } elseif (in_array($ext, ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'webm'])) {
                 $type = 'audio';
+            } elseif (in_array($ext, ['mp4', 'mov', 'avi', 'mkv', 'webm'])) {
+                $type = 'video';
             } else {
                 $type = 'document';
             }
