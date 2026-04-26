@@ -1111,3 +1111,16 @@ a:hover { text-decoration: underline; }
     color: var(--text);
     margin: 0;
 }
+
+/* ── Rate limit error styling (reutiliza .error-box existente) ── */
+/* No new styles needed — uses existing .error-box class */
+
+/* ── CV section title with confidence ──────────────────────────── */
+.section-title .intel-confidence {
+    font-size: 0.7rem;
+    color: var(--accent);
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    margin-left: 0.4rem;
+}
