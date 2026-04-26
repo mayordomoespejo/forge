@@ -12,6 +12,7 @@ $error    = $result['error']    ?? null;
         <span class="results-type-badge type-<?= htmlspecialchars($type) ?>">
             <?= htmlspecialchars(ucfirst($type)) ?>
         </span>
+        <a href="/ajax/export.php" target="_blank" class="export-btn">Export PDF</a>
     </div>
 
     <div class="results-columns">
@@ -651,6 +652,13 @@ $error    = $result['error']    ?? null;
 
         <div class="chat-panel">
             <h2 class="panel-title">Chat</h2>
+            <div class="chat-actions">
+                <button type="button" class="chat-summary-btn" id="chat-summary-btn">Summarize chat</button>
+            </div>
+            <div id="chat-summary-output" class="chat-summary-output hidden">
+                <span class="chat-summary-label">Conversation summary</span>
+                <p id="chat-summary-text" class="chat-summary-text"></p>
+            </div>
 
             <div class="chat-messages" id="chat-messages">
                 <div class="chat-bubble assistant">
