@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Forge\Services;
 
+use Forge\Exceptions\TranscriptionException;
+
 class SpeechService
 {
     private string $key;
@@ -16,33 +18,37 @@ class SpeechService
     }
 
     /**
-     * Transcribes audio file using Azure Speech-to-Text REST API.
-     * Supports: wav, mp3, ogg, flac, webm (max ~60 seconds recommended).
+     * Transcribes an audio file using the Azure Speech-to-Text REST API.
      *
-     * @throws \RuntimeException
+     * Supports wav, mp3, ogg, flac, and webm formats (max ~60 seconds recommended).
+     *
+     * @param  string $filePath Absolute path to the audio file
+     * @param  string $language BCP-47 language tag (e.g. 'en-US', 'es-ES')
+     * @return string           Transcribed text
+     * @throws TranscriptionException when credentials are missing, file cannot be read, or recognition fails
      */
     public function transcribe(string $filePath, string $language = 'en-US'): string
     {
         if ($this->key === '') {
-            throw new \RuntimeException('Azure Speech key not configured.');
+            throw new TranscriptionException('Azure Speech key not configured.');
         }
 
         if (!is_file($filePath)) {
-            throw new \RuntimeException('Audio file not found: ' . $filePath);
+            throw new TranscriptionException('Audio file not found: ' . $filePath);
         }
 
         $audio = file_get_contents($filePath);
         if ($audio === false) {
-            throw new \RuntimeException('Unable to read audio file.');
+            throw new TranscriptionException('Unable to read audio file.');
         }
 
         $ext         = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-        $contentType = match($ext) {
-            'wav'  => 'audio/wav',
-            'mp3'  => 'audio/mpeg',
-            'ogg'  => 'audio/ogg',
-            'flac' => 'audio/flac',
-            'webm' => 'audio/webm',
+        $contentType = match ($ext) {
+            'wav'   => 'audio/wav',
+            'mp3'   => 'audio/mpeg',
+            'ogg'   => 'audio/ogg',
+            'flac'  => 'audio/flac',
+            'webm'  => 'audio/webm',
             default => 'audio/wav',
         };
 
@@ -70,14 +76,14 @@ class SpeechService
         curl_close($ch);
 
         if ($raw === false || $httpCode !== 200) {
-            throw new \RuntimeException('Speech transcription failed (HTTP ' . $httpCode . ').');
+            throw new TranscriptionException('Speech transcription failed (HTTP ' . $httpCode . ').');
         }
 
         $data   = json_decode($raw, true) ?? [];
         $status = $data['RecognitionStatus'] ?? 'Error';
 
         if ($status !== 'Success') {
-            throw new \RuntimeException('Speech recognition status: ' . $status);
+            throw new TranscriptionException('Speech recognition status: ' . $status);
         }
 
         return $data['DisplayText'] ?? '';
