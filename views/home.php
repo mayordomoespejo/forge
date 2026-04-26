@@ -46,6 +46,11 @@ ob_start();
                         </select>
                     </div>
                 </div>
+                <label class="medical-toggle" style="padding: 0 1.5rem 1rem;">
+                    <input type="checkbox" name="medical_mode" value="1" id="medical-mode-file">
+                    <span class="medical-toggle-label">Medical mode</span>
+                    <span class="medical-toggle-hint">Detects medications, diagnoses, symptoms</span>
+                </label>
             </div>
 
             <div class="tab-panel hidden" id="tab-text">
@@ -56,6 +61,11 @@ ob_start();
                     placeholder="Paste your text here - articles, reviews, documents, code..."
                     rows="10"
                 ></textarea>
+                <label class="medical-toggle">
+                    <input type="checkbox" name="medical_mode" value="1" id="medical-mode">
+                    <span class="medical-toggle-label">Medical mode</span>
+                    <span class="medical-toggle-hint">Detects medications, diagnoses, symptoms</span>
+                </label>
             </div>
 
             <div class="tab-panel hidden" id="tab-audio">
