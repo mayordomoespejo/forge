@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true"
+         stopOnFailure="false">
+    <testsuites>
+        <testsuite name="Unit">
+            <directory>tests/Unit</directory>
+        </testsuite>
+    </testsuites>
+    <php>
+        <env name="GITHUB_TOKEN"              value="test_token"/>
+        <env name="AZURE_LANGUAGE_ENDPOINT"   value="https://test.cognitiveservices.azure.com"/>
+        <env name="AZURE_LANGUAGE_KEY"        value=""/>
+        <env name="AZURE_DOCUMENT_ENDPOINT"   value="https://test.cognitiveservices.azure.com"/>
+        <env name="AZURE_DOCUMENT_KEY"        value=""/>
+        <env name="AZURE_TRANSLATOR_KEY"      value=""/>
+        <env name="AZURE_TRANSLATOR_REGION"   value="eastus"/>
+        <env name="AZURE_CONTENT_SAFETY_KEY"  value=""/>
+        <env name="AZURE_SPEECH_KEY"          value=""/>
+        <env name="AZURE_SEARCH_KEY"          value=""/>
+        <env name="AZURE_STORAGE_KEY"         value=""/>
+        <env name="AZURE_VISION_KEY"          value=""/>
+        <env name="BING_SEARCH_KEY"           value=""/>
+        <env name="AZURE_APPINSIGHTS_IKEY"    value=""/>
+        <env name="AZURE_VIDEO_INDEXER_ACCOUNT_ID" value=""/>
+        <env name="AZURE_VIDEO_INDEXER_API_KEY"    value=""/>
+    </php>
+    <source>
+        <include>
+            <directory>src</directory>
+        </include>
+    </source>
+</phpunit>
