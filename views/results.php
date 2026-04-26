@@ -1,7 +1,45 @@
 <?php
 /** @var array<string, mixed> $result */
+$isPending = isset($_SESSION['forge_job']) && empty($_SESSION['result']);
+?>
+<?php
 
 ob_start();
+
+if ($isPending): ?>
+<div class="pending-container">
+    <div class="pending-box">
+        <div class="pending-title">Processing your content</div>
+        <div class="pending-spinner">
+            <span class="spinner"></span>
+        </div>
+        <p class="pending-hint">This may take a few minutes for video files.<br>The page will update automatically.</p>
+    </div>
+</div>
+<script>
+(function () {
+    function poll() {
+        fetch('/ajax/job-status.php')
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.status === 'completed' || data.status === 'failed') {
+                    window.location.reload();
+                } else {
+                    setTimeout(poll, 2000);
+                }
+            })
+            .catch(function () { setTimeout(poll, 3000); });
+    }
+    setTimeout(poll, 2000);
+}());
+</script>
+<?php
+$body  = ob_get_clean();
+$title = 'Processing...';
+require __DIR__ . '/layout.php';
+exit;
+endif;
+
 $type     = $result['type']     ?? 'unknown';
 $analysis = $result['analysis'] ?? [];
 $error    = $result['error']    ?? null;
