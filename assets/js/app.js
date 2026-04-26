@@ -212,7 +212,7 @@
 
   if (!chatForm) return;
 
-  var history = [];
+  window._chatHistory = [];
 
   function scrollToBottom() {
     if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -252,7 +252,7 @@
     if (!message) return;
 
     appendBubble('user', message);
-    history.push({ role: 'user', content: message });
+    window._chatHistory.push({ role: 'user', content: message });
 
     if (chatInput) { chatInput.value = ''; autoResize(chatInput); }
     if (chatSendBtn) chatSendBtn.disabled = true;
@@ -263,7 +263,7 @@
     fetch('/ajax/chat.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: message, history: history.slice(0, -1) }),
+      body: JSON.stringify({ message: message, history: window._chatHistory.slice(0, -1) }),
     })
       .then(function(res) {
         typingBubble.remove();
@@ -277,7 +277,7 @@
         function read() {
           return reader.read().then(function(result) {
             if (result.done) {
-              history.push({ role: 'assistant', content: accumulated });
+              window._chatHistory.push({ role: 'assistant', content: accumulated });
               if (chatSendBtn) chatSendBtn.disabled = false;
               if (chatInput) chatInput.focus();
               return;
@@ -431,4 +431,46 @@
         ttsBtn.disabled = false;
       });
   });
+}());
+
+/* ── Chat summary ────────────────────────────────────────────────── */
+(function () {
+    var btn    = document.getElementById('chat-summary-btn');
+    var output = document.getElementById('chat-summary-output');
+    var text   = document.getElementById('chat-summary-text');
+
+    if (!btn) return;
+
+    btn.addEventListener('click', function () {
+        if (typeof window._chatHistory === 'undefined' || window._chatHistory.length === 0) {
+            alert('No conversation to summarize yet.');
+            return;
+        }
+
+        btn.disabled    = true;
+        btn.textContent = 'Summarizing...';
+
+        fetch('/ajax/chat-summary.php', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ history: window._chatHistory }),
+        })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (data.success && data.summary) {
+                    text.textContent = data.summary;
+                    output.classList.remove('hidden');
+                    output.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                } else {
+                    alert('Summary error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(function (err) {
+                alert('Network error: ' + err.message);
+            })
+            .finally(function () {
+                btn.disabled    = false;
+                btn.textContent = 'Summarize chat';
+            });
+    });
 }());
