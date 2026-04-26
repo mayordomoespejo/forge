@@ -6,6 +6,11 @@ namespace Forge\Services;
 
 class AzureSummaryService
 {
+    private const API_VERSION       = '2023-04-01';
+    private const DEFAULT_SENTENCES = 5;
+    private const MAX_TEXT_LENGTH   = 5000;
+    private const POLL_MAX_ATTEMPTS = 20;
+
     private string $endpoint;
     private string $key;
 
@@ -16,19 +21,24 @@ class AzureSummaryService
     }
 
     /**
-     * Extractive summarization — returns top sentences from the original text.
-     * Returns null if key is not configured or request fails.
+     * Produces an extractive summary by selecting the top-ranked original sentences.
+     *
+     * Returns null when the service key is absent, the text is empty, or the request fails.
+     *
+     * @param  string $text          Plain text to summarise
+     * @param  int    $sentenceCount Maximum number of sentences to extract
+     * @return string|null           Space-joined sentences in document order, or null on failure
      */
-    public function extractive(string $text, int $sentenceCount = 5): ?string
+    public function extractive(string $text, int $sentenceCount = self::DEFAULT_SENTENCES): ?string
     {
         if ($this->key === '' || trim($text) === '') {
             return null;
         }
 
-        $submitUrl = $this->endpoint . '/language/analyze-text/jobs?api-version=2023-04-01';
+        $submitUrl = $this->endpoint . '/language/analyze-text/jobs?api-version=' . self::API_VERSION;
         $body      = json_encode([
             'displayName'   => 'forge-summary',
-            'analysisInput' => ['documents' => [['id' => '1', 'language' => 'en', 'text' => mb_substr($text, 0, 5000)]]],
+            'analysisInput' => ['documents' => [['id' => '1', 'language' => 'en', 'text' => mb_substr($text, 0, self::MAX_TEXT_LENGTH)]]],
             'tasks'         => [['kind' => 'ExtractiveSummarization', 'parameters' => ['sentenceCount' => $sentenceCount]]],
         ]);
 
@@ -54,8 +64,8 @@ class AzureSummaryService
             return null;
         }
 
-        $headers       = substr($raw, 0, $hdrSize);
-        $operationUrl  = null;
+        $headers      = substr($raw, 0, $hdrSize);
+        $operationUrl = null;
         foreach (explode("\r\n", $headers) as $line) {
             if (stripos($line, 'operation-location:') === 0) {
                 $operationUrl = trim(substr($line, strlen('operation-location:')));
@@ -72,7 +82,7 @@ class AzureSummaryService
 
     private function pollAndExtract(string $operationUrl): ?string
     {
-        for ($i = 0; $i < 20; $i++) {
+        for ($i = 0; $i < self::POLL_MAX_ATTEMPTS; $i++) {
             sleep(1);
 
             $ch = curl_init($operationUrl);
@@ -94,7 +104,7 @@ class AzureSummaryService
             if ($status === 'succeeded') {
                 $sentences = $data['tasks']['items'][0]['results']['documents'][0]['sentences'] ?? [];
                 usort($sentences, fn($a, $b) => $b['rankScore'] <=> $a['rankScore']);
-                $top = array_slice($sentences, 0, 5);
+                $top = array_slice($sentences, 0, self::DEFAULT_SENTENCES);
                 usort($top, fn($a, $b) => $a['offset'] <=> $b['offset']);
                 return implode(' ', array_column($top, 'text'));
             }

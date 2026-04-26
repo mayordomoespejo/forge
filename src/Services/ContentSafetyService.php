@@ -6,9 +6,12 @@ namespace Forge\Services;
 
 class ContentSafetyService
 {
+    private const API_VERSION     = '2023-10-01';
+    private const BLOCK_SEVERITY  = 4;
+    private const MAX_TEXT_LENGTH = 10000;
+
     private string $endpoint;
     private string $key;
-    private int    $blockSeverity = 4;
 
     public function __construct()
     {
@@ -17,6 +20,11 @@ class ContentSafetyService
     }
 
     /**
+     * Analyses plain text for harmful content across four categories.
+     *
+     * Returns a safe default when credentials are absent or text is empty.
+     *
+     * @param  string $text Text to evaluate (truncated to MAX_TEXT_LENGTH characters)
      * @return array{safe: bool, flags: array<int, array{category: string, severity: int}>}
      */
     public function analyzeText(string $text): array
@@ -26,15 +34,20 @@ class ContentSafetyService
         }
 
         $body = json_encode([
-            'text'       => mb_substr($text, 0, 10000),
+            'text'       => mb_substr($text, 0, self::MAX_TEXT_LENGTH),
             'categories' => ['Hate', 'Violence', 'Sexual', 'SelfHarm'],
             'outputType' => 'FourSeverityLevels',
         ]);
 
-        return $this->call($this->endpoint . '/contentsafety/text:analyze?api-version=2023-10-01', $body);
+        return $this->call($this->endpoint . '/contentsafety/text:analyze?api-version=' . self::API_VERSION, $body);
     }
 
     /**
+     * Analyses an image file for harmful content across four categories.
+     *
+     * Returns a safe default when credentials are absent or the file cannot be read.
+     *
+     * @param  string $imagePath Absolute path to the image file
      * @return array{safe: bool, flags: array<int, array{category: string, severity: int}>}
      */
     public function analyzeImage(string $imagePath): array
@@ -54,7 +67,7 @@ class ContentSafetyService
             'outputType' => 'FourSeverityLevels',
         ]);
 
-        return $this->call($this->endpoint . '/contentsafety/image:analyze?api-version=2023-10-01', $body);
+        return $this->call($this->endpoint . '/contentsafety/image:analyze?api-version=' . self::API_VERSION, $body);
     }
 
     /**
@@ -88,7 +101,7 @@ class ContentSafetyService
 
         foreach ($data['categoriesAnalysis'] ?? [] as $item) {
             $severity = (int) ($item['severity'] ?? 0);
-            if ($severity >= $this->blockSeverity) {
+            if ($severity >= self::BLOCK_SEVERITY) {
                 $safe    = false;
                 $flags[] = ['category' => $item['category'] ?? '', 'severity' => $severity];
             }

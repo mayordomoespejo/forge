@@ -1,9 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Forge\Services;
 
 class LanguageService
 {
+    private const API_VERSION   = 'v3.1';
+    private const CURL_TIMEOUT  = 20;
+
     private string $endpoint;
     private string $key;
 
@@ -14,6 +19,12 @@ class LanguageService
     }
 
     /**
+     * Runs sentiment, key phrase, NER, entity linking, and language detection in parallel.
+     *
+     * All five Azure Text Analytics calls are dispatched concurrently via curl_multi
+     * to minimise total latency.
+     *
+     * @param  string $text Plain text to analyse (any language)
      * @return array{
      *   sentiment: string,
      *   sentiment_scores: array{positive: float, neutral: float, negative: float},
@@ -30,11 +41,11 @@ class LanguageService
         $body = json_encode(['documents' => [['id' => '1', 'text' => $text]]]);
 
         $endpoints = [
-            'sentiment'  => '/text/analytics/v3.1/sentiment?opinionMining=true',
-            'keyPhrases' => '/text/analytics/v3.1/keyPhrases',
-            'entities'   => '/text/analytics/v3.1/entities/recognition/general',
-            'languages'  => '/text/analytics/v3.1/languages',
-            'linking'    => '/text/analytics/v3.1/entities/linking',
+            'sentiment'  => '/text/analytics/' . self::API_VERSION . '/sentiment?opinionMining=true',
+            'keyPhrases' => '/text/analytics/' . self::API_VERSION . '/keyPhrases',
+            'entities'   => '/text/analytics/' . self::API_VERSION . '/entities/recognition/general',
+            'languages'  => '/text/analytics/' . self::API_VERSION . '/languages',
+            'linking'    => '/text/analytics/' . self::API_VERSION . '/entities/linking',
         ];
 
         $multi   = curl_multi_init();
@@ -50,7 +61,7 @@ class LanguageService
                     'Ocp-Apim-Subscription-Key: ' . $this->key,
                     'Content-Type: application/json',
                 ],
-                CURLOPT_TIMEOUT        => 20,
+                CURLOPT_TIMEOUT        => self::CURL_TIMEOUT,
             ]);
             curl_multi_add_handle($multi, $ch);
             $handles[$key] = $ch;
