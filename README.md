@@ -15,6 +15,49 @@ AI-powered content analyzer — upload text, images, or documents and get struct
 
 ---
 
+## Architecture
+
+Forge uses a sequential multi-agent pipeline where each agent has a single responsibility:
+
+```
+Input (text / image / PDF / audio / video)
+    │
+    ├── [Safety Gate]      Azure AI Content Safety — blocks severity >= 4
+    ├── [Extractor]        Azure AI Language NER + Entity Linking
+    ├── [Language]         Sentiment · Opinion Mining · Key phrases
+    ├── [Healthcare]       Azure AI Language Healthcare NER (optional)
+    ├── [Censor]           Azure AI Language PII Detection → redaction
+    ├── [Judge]            GitHub Models gpt-4o-mini — consistency check
+    ├── [Summarizer]       Azure AI Language extractive → gpt-4o-mini fallback
+    └── [Persistence]      Azure AI Search — history + RAG
+```
+
+### Design patterns
+
+- **Sequential pipeline** — `IntelligencePipeline` chains agents, each receiving the previous output
+- **Graceful degradation** — every service returns a safe default when credentials are absent
+- **Fire-and-forget telemetry** — `AppInsightsService` sends non-blocking tracking calls
+- **Async job queue** — file-based queue decouples long-running jobs (video, audio) from the HTTP request cycle
+- **PRG pattern** — POST → redirect → GET prevents double-submission on refresh
+
+### Project structure
+
+```
+src/
+├── Contracts/          Interfaces: StorageService, SearchContract, AnalyzableService
+├── Exceptions/         Domain exceptions: AnalysisException, StorageException, TranscriptionException
+├── Pipeline/           IntelligencePipeline — orchestrates agents
+├── Queue/              JobQueue + Worker — async processing
+└── Services/           One class per external service / capability
+
+ajax/                   AJAX endpoints (chat, tts, export, job-status, chat-summary)
+views/                  PHP templates (layout, home, results, history)
+assets/                 CSS and JS
+tests/Unit/             PHPUnit — 65 tests, no real credentials needed
+```
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
