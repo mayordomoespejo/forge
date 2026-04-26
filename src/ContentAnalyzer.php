@@ -38,7 +38,7 @@ class ContentAnalyzer
      * @param  string $type     'text' | 'image' | 'document' | 'audio' | 'video'
      * @param  string $content  Plain text (for type=text)
      * @param  string $filePath Absolute path to file (for type=image|document|audio|video)
-     * @param  array  $options  Optional parameters: doc_model, speech_language, medical_mode
+     * @param  array  $options  Optional parameters: doc_model, speech_language, medical_mode, query_fields
      * @return array<string, mixed>
      */
     public function analyze(string $type, string $content = '', string $filePath = '', array $options = []): array
@@ -126,8 +126,9 @@ class ContentAnalyzer
      */
     private function analyzeDocument(string $filePath, array $options = []): array
     {
-        $docModel = $options['doc_model'] ?? 'prebuilt-read';
-        $doc = $this->document->extract($filePath, $docModel);
+        $docModel    = $options['doc_model']    ?? 'prebuilt-read';
+        $queryFields = $options['query_fields'] ?? [];
+        $doc = $this->document->extract($filePath, $docModel, $queryFields);
 
         $language = [];
         if (!empty($doc['content'])) {
