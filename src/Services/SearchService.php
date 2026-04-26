@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Forge\Services;
 
-class SearchService
+use Forge\Contracts\SearchContract;
+
+class SearchService implements SearchContract
 {
+    private const API_VERSION = '2023-11-01';
+
     private string $endpoint;
     private string $key;
     private string $index;
-    private string $apiVersion = '2023-11-01';
 
     public function __construct()
     {
@@ -24,7 +27,9 @@ class SearchService
     }
 
     /**
-     * Saves an analysis result to the search index (creates index on first use).
+     * Persists an analysis result to the search index (creates index on first use).
+     *
+     * @param array<string, mixed> $result
      */
     public function save(string $id, array $result): void
     {
@@ -45,7 +50,7 @@ class SearchService
         ];
 
         $body = json_encode(['value' => [$doc]]);
-        $url  = $this->endpoint . '/indexes/' . $this->index . '/docs/index?api-version=' . $this->apiVersion;
+        $url  = $this->endpoint . '/indexes/' . $this->index . '/docs/index?api-version=' . self::API_VERSION;
 
         $ch = curl_init($url);
         curl_setopt_array($ch, [
@@ -63,7 +68,11 @@ class SearchService
     }
 
     /**
-     * @return array<int, array{type: string, summary: string, content: string, timestamp: string}>
+     * Searches the index and returns matching documents.
+     *
+     * @param  string $query Search query string
+     * @param  int    $top   Maximum number of results to return
+     * @return array<int, array<string, string>>
      */
     public function search(string $query, int $top = 3): array
     {
@@ -76,7 +85,7 @@ class SearchService
             'orderby' => 'timestamp desc',
         ]);
 
-        $url = $this->endpoint . '/indexes/' . $this->index . '/docs/search?api-version=' . $this->apiVersion;
+        $url = $this->endpoint . '/indexes/' . $this->index . '/docs/search?api-version=' . self::API_VERSION;
 
         $ch = curl_init($url);
         curl_setopt_array($ch, [
@@ -108,7 +117,10 @@ class SearchService
     }
 
     /**
-     * @return array<int, array{type: string, filename: string, summary: string, timestamp: string, language: string}>
+     * Returns the most recent analyses ordered by timestamp descending.
+     *
+     * @param  int $top Maximum number of results to return
+     * @return array<int, array<string, string>>
      */
     public function all(int $top = 20): array
     {
@@ -121,7 +133,7 @@ class SearchService
             'orderby' => 'timestamp desc',
         ]);
 
-        $url = $this->endpoint . '/indexes/' . $this->index . '/docs/search?api-version=' . $this->apiVersion;
+        $url = $this->endpoint . '/indexes/' . $this->index . '/docs/search?api-version=' . self::API_VERSION;
 
         $ch = curl_init($url);
         curl_setopt_array($ch, [
@@ -154,7 +166,7 @@ class SearchService
 
     private function ensureIndex(): void
     {
-        $url = $this->endpoint . '/indexes/' . $this->index . '?api-version=' . $this->apiVersion;
+        $url = $this->endpoint . '/indexes/' . $this->index . '?api-version=' . self::API_VERSION;
 
         $ch = curl_init($url);
         curl_setopt_array($ch, [
@@ -162,8 +174,8 @@ class SearchService
             CURLOPT_TIMEOUT        => 10,
             CURLOPT_HTTPHEADER     => ['api-key: ' . $this->key],
         ]);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
         if ($httpCode === 200) return;
@@ -182,7 +194,7 @@ class SearchService
             ],
         ]);
 
-        $putUrl = $this->endpoint . '/indexes/' . $this->index . '?api-version=' . $this->apiVersion;
+        $putUrl = $this->endpoint . '/indexes/' . $this->index . '?api-version=' . self::API_VERSION;
         $ch     = curl_init($putUrl);
         curl_setopt_array($ch, [
             CURLOPT_CUSTOMREQUEST  => 'PUT',
