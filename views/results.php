@@ -135,6 +135,22 @@ $error    = $result['error']    ?? null;
                 </div>
                 <?php endif; ?>
 
+                <?php
+                $healthEntities = $result['health_entities'] ?? [];
+                if (!empty($healthEntities)): ?>
+                <div class="section">
+                    <h3 class="section-title">Medical entities</h3>
+                    <ul class="entity-list">
+                        <?php foreach ($healthEntities as $he): ?>
+                        <li class="entity-item">
+                            <span class="entity-text"><?= htmlspecialchars($he['text']) ?></span>
+                            <span class="entity-cat entity-cat--health"><?= htmlspecialchars($he['category']) ?></span>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+                <?php endif; ?>
+
             <?php elseif ($type === 'image'): ?>
                 <?php
                 $description = $analysis['description']  ?? '';
@@ -508,6 +524,48 @@ $error    = $result['error']    ?? null;
                 </div>
                 <?php endif; ?>
 
+            <?php elseif ($type === 'video'): ?>
+                <?php
+                $transcript = $result['analysis']['transcript'] ?? '';
+                $topics     = $result['analysis']['topics']     ?? [];
+                $keywords   = $result['analysis']['keywords']   ?? [];
+                $duration   = $result['analysis']['duration']   ?? '';
+                ?>
+                <div class="meta-row">
+                    <?php if ($duration): ?>
+                    <span class="badge badge-pages">&#9654; <?= htmlspecialchars($duration) ?></span>
+                    <?php endif; ?>
+                </div>
+
+                <?php if (!empty($topics)): ?>
+                <div class="section">
+                    <h3 class="section-title">Topics</h3>
+                    <div class="tag-cloud">
+                        <?php foreach ($topics as $topic): ?>
+                        <span class="tag"><?= htmlspecialchars($topic) ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if (!empty($keywords)): ?>
+                <div class="section">
+                    <h3 class="section-title">Keywords</h3>
+                    <div class="tag-cloud">
+                        <?php foreach ($keywords as $kw): ?>
+                        <span class="tag"><?= htmlspecialchars($kw) ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if ($transcript): ?>
+                <div class="section">
+                    <h3 class="section-title">Transcript</h3>
+                    <div class="extracted-text"><?= nl2br(htmlspecialchars($transcript)) ?></div>
+                </div>
+                <?php endif; ?>
+
             <?php else: ?>
                 <p class="muted">No analysis data available.</p>
             <?php endif; ?>
@@ -556,6 +614,7 @@ $error    = $result['error']    ?? null;
                         <span class="intel-method"><?= $method === 'extractive' ? 'Azure extractive' : 'AI generated' ?></span>
                     </span>
                     <p class="summary-text"><?= htmlspecialchars($pipSummary) ?></p>
+                    <button type="button" class="tts-btn" id="tts-btn">Listen</button>
                 </div>
                 <?php elseif (!$pipConsistent): ?>
                 <div class="intel-block">
