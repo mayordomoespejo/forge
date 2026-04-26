@@ -43,6 +43,12 @@ try {
         }
     }
 
+    $bingContext = '';
+    $bing = new Forge\Services\BingSearchService();
+    if ($bing->isConfigured()) {
+        $bingContext = $bing->search($message);
+    }
+
     $cleanHistory = [];
     foreach ($history as $item) {
         $role    = in_array($item['role'] ?? '', ['user', 'assistant', 'system']) ? $item['role'] : 'user';
@@ -55,7 +61,7 @@ try {
     $messages = array_merge(
         [[
             'role'    => 'system',
-            'content' => "You are an AI assistant helping analyze content. Context: {$contextJson}. Answer helpfully and concisely.{$ragContext}",
+            'content' => "You are an AI assistant helping analyze content. Context: {$contextJson}. Answer helpfully and concisely.{$ragContext}{$bingContext}",
         ]],
         $cleanHistory,
         [['role' => 'user', 'content' => $message]]
