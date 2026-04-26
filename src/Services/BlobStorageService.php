@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Forge\Services;
 
-class BlobStorageService
+use Forge\Contracts\StorageService;
+use Forge\Exceptions\StorageException;
+
+class BlobStorageService implements StorageService
 {
     private string $account;
     private string $key;
@@ -26,17 +29,17 @@ class BlobStorageService
     /**
      * Uploads a local file to Azure Blob Storage and returns the blob URL.
      *
-     * @throws \RuntimeException
+     * @throws StorageException when the file cannot be read or the upload fails
      */
     public function upload(string $localPath, string $blobName): string
     {
         if (!$this->isConfigured()) {
-            throw new \RuntimeException('Blob Storage not configured.');
+            throw new StorageException('Blob Storage not configured.');
         }
 
-        $data        = file_get_contents($localPath);
+        $data = file_get_contents($localPath);
         if ($data === false) {
-            throw new \RuntimeException('Cannot read file: ' . $localPath);
+            throw new StorageException('Cannot read file: ' . $localPath);
         }
 
         $ext         = strtolower(pathinfo($localPath, PATHINFO_EXTENSION));
@@ -69,7 +72,7 @@ class BlobStorageService
             $canonResource,
         ]);
 
-        $sig = base64_encode(hash_hmac('sha256', $stringToSign, base64_decode($this->key), true));
+        $sig  = base64_encode(hash_hmac('sha256', $stringToSign, base64_decode($this->key), true));
         $auth = 'SharedKey ' . $this->account . ':' . $sig;
 
         $url = sprintf(
@@ -93,12 +96,12 @@ class BlobStorageService
             ],
         ]);
 
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
         if ($httpCode !== 201) {
-            throw new \RuntimeException('Blob upload failed (HTTP ' . $httpCode . ').');
+            throw new StorageException('Blob upload failed (HTTP ' . $httpCode . ').');
         }
 
         return sprintf(
@@ -109,18 +112,18 @@ class BlobStorageService
 
     private function mimeFor(string $ext): string
     {
-        return match($ext) {
-            'pdf'        => 'application/pdf',
-            'png'        => 'image/png',
-            'jpg', 'jpeg'=> 'image/jpeg',
-            'gif'        => 'image/gif',
-            'webp'       => 'image/webp',
-            'mp3'        => 'audio/mpeg',
-            'wav'        => 'audio/wav',
-            'ogg'        => 'audio/ogg',
-            'mp4'        => 'video/mp4',
-            'mov'        => 'video/quicktime',
-            default      => 'application/octet-stream',
+        return match ($ext) {
+            'pdf'         => 'application/pdf',
+            'png'         => 'image/png',
+            'jpg', 'jpeg' => 'image/jpeg',
+            'gif'         => 'image/gif',
+            'webp'        => 'image/webp',
+            'mp3'         => 'audio/mpeg',
+            'wav'         => 'audio/wav',
+            'ogg'         => 'audio/ogg',
+            'mp4'         => 'video/mp4',
+            'mov'         => 'video/quicktime',
+            default       => 'application/octet-stream',
         };
     }
 }
