@@ -46,6 +46,8 @@ if ($uri === '/' && $method === 'GET') {
             'query_fields'    => array_filter(array_map('trim', explode(',', $_POST['query_fields'] ?? ''))),
         ];
 
+        $asyncTypes = ['video', 'audio'];
+
         if (!empty($_FILES['file']['name']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
             $ext  = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
             $dest = __DIR__ . '/uploads/' . uniqid('forge_', true) . '.' . $ext;
@@ -64,7 +66,15 @@ if ($uri === '/' && $method === 'GET') {
                 $type = 'document';
             }
 
-            $result = $analyzer->analyze($type, '', $dest, $options);
+            if (in_array($type, $asyncTypes, true)) {
+                $queue  = new Forge\Queue\JobQueue();
+                $jobId  = $queue->enqueue($type, $dest, $options);
+                $_SESSION['forge_job'] = $jobId;
+                unset($_SESSION['result']);
+            } else {
+                $result = $analyzer->analyze($type, '', $dest, $options);
+                $_SESSION['result'] = $result;
+            }
         } else {
             $text = trim($_POST['text'] ?? '');
             if ($text === '') {
@@ -72,9 +82,8 @@ if ($uri === '/' && $method === 'GET') {
                 exit;
             }
             $result = $analyzer->analyze('text', $text, '', $options);
+            $_SESSION['result'] = $result;
         }
-
-        $_SESSION['result'] = $result;
     } catch (\Throwable $e) {
         $_SESSION['result'] = [
             'type'  => 'error',
@@ -87,16 +96,26 @@ if ($uri === '/' && $method === 'GET') {
 
 } elseif ($uri === '/results' && $method === 'GET') {
 
-    if (empty($_SESSION['result'])) {
+    if (empty($_SESSION['result']) && empty($_SESSION['forge_job'])) {
         header('Location: /');
         exit;
     }
 
-    $result = $_SESSION['result'];
+    $result = $_SESSION['result'] ?? [];
     require __DIR__ . '/views/results.php';
 
 } elseif ($uri === '/history' && $method === 'GET') {
     require __DIR__ . '/views/history.php';
+
+} elseif (str_starts_with($uri, '/ajax/') && $method === 'GET') {
+
+    $script = __DIR__ . $uri . '.php';
+    if (is_file($script)) {
+        require $script;
+    } else {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'error' => 'Endpoint not found.']);
+    }
 
 } elseif (str_starts_with($uri, '/ajax/') && $method === 'POST') {
 
