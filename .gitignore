@@ -8,3 +8,8 @@ uploads/*
 /storage/queue/processing/
 /storage/queue/completed/
 /storage/queue/failed/
+node_modules/
+.vscode/
+*.swp
+*.swo
+.idea/
