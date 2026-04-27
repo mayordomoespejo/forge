@@ -64,121 +64,88 @@
     });
   });
 
-  /* Drag & drop */
-  var dropZone      = $('#drop-zone');
-  var fileInput     = $('#file-input');
-  var dropContent   = $('#drop-zone-content');
-  var dropSelected  = $('#drop-zone-selected');
-  var selectedName  = $('#selected-name');
-  var removeFileBtn = $('#remove-file');
+  /**
+   * Sets up drag-and-drop and file selection for a drop zone.
+   * @param {{ zone: string, input: string, content: string, selected: string, name: string, remove: string }} cfg
+   */
+  function setupDropZone(cfg) {
+    var dropZone     = $(cfg.zone);
+    var fileInput    = $(cfg.input);
+    var dropContent  = $(cfg.content);
+    var dropSelected = $(cfg.selected);
+    var selectedName = $(cfg.name);
+    var removeBtn    = $(cfg.remove);
 
-  function showSelectedFile(name) {
-    if (!dropContent || !dropSelected) return;
-    dropContent.classList.add('hidden');
-    dropSelected.classList.remove('hidden');
-    if (selectedName) selectedName.textContent = name;
+    function showSelected(fileName) {
+      if (!dropContent || !dropSelected) return;
+      dropContent.classList.add('hidden');
+      dropSelected.classList.remove('hidden');
+      if (selectedName) selectedName.textContent = fileName;
+    }
+
+    function clearSelected() {
+      if (!dropContent || !dropSelected) return;
+      dropSelected.classList.add('hidden');
+      dropContent.classList.remove('hidden');
+      if (fileInput) fileInput.value = '';
+    }
+
+    if (fileInput) {
+      fileInput.addEventListener('change', function () {
+        if (this.files && this.files[0]) showSelected(this.files[0].name);
+      });
+    }
+
+    if (removeBtn) {
+      removeBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        clearSelected();
+      });
+    }
+
+    if (dropZone) {
+      dropZone.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+      });
+      dropZone.addEventListener('dragleave', function () {
+        dropZone.classList.remove('dragover');
+      });
+      dropZone.addEventListener('drop', function (e) {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        var files = e.dataTransfer && e.dataTransfer.files;
+        if (files && files[0] && fileInput) {
+          try {
+            var dt = new DataTransfer();
+            dt.items.add(files[0]);
+            fileInput.files = dt.files;
+          } catch (ex) {}
+          showSelected(files[0].name);
+        }
+      });
+    }
   }
 
-  function clearSelectedFile() {
-    if (!dropContent || !dropSelected) return;
-    dropSelected.classList.add('hidden');
-    dropContent.classList.remove('hidden');
-    if (fileInput) fileInput.value = '';
-  }
+  /* File drop zone */
+  setupDropZone({
+    zone:     '#drop-zone',
+    input:    '#file-input',
+    content:  '#drop-zone-content',
+    selected: '#drop-zone-selected',
+    name:     '#selected-name',
+    remove:   '#remove-file',
+  });
 
-  if (fileInput) {
-    fileInput.addEventListener('change', function () {
-      if (this.files && this.files[0]) showSelectedFile(this.files[0].name);
-    });
-  }
-
-  if (removeFileBtn) {
-    removeFileBtn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      clearSelectedFile();
-    });
-  }
-
-  if (dropZone) {
-    dropZone.addEventListener('dragover', function (e) {
-      e.preventDefault();
-      dropZone.classList.add('dragover');
-    });
-    dropZone.addEventListener('dragleave', function () {
-      dropZone.classList.remove('dragover');
-    });
-    dropZone.addEventListener('drop', function (e) {
-      e.preventDefault();
-      dropZone.classList.remove('dragover');
-      var files = e.dataTransfer && e.dataTransfer.files;
-      if (files && files[0] && fileInput) {
-        try {
-          var dt = new DataTransfer();
-          dt.items.add(files[0]);
-          fileInput.files = dt.files;
-        } catch (ex) {}
-        showSelectedFile(files[0].name);
-      }
-    });
-  }
-
-  /* Audio drag & drop */
-  var audioDropZone     = $('#drop-zone-audio');
-  var audioInput        = $('#audio-input');
-  var audioDropContent  = $('#drop-zone-audio-content');
-  var audioDropSelected = $('#drop-zone-audio-selected');
-  var audioSelectedName = $('#audio-selected-name');
-  var removeAudioBtn    = $('#remove-audio');
-
-  function showSelectedAudio(name) {
-    if (!audioDropContent || !audioDropSelected) return;
-    audioDropContent.classList.add('hidden');
-    audioDropSelected.classList.remove('hidden');
-    if (audioSelectedName) audioSelectedName.textContent = name;
-  }
-
-  function clearSelectedAudio() {
-    if (!audioDropContent || !audioDropSelected) return;
-    audioDropSelected.classList.add('hidden');
-    audioDropContent.classList.remove('hidden');
-    if (audioInput) audioInput.value = '';
-  }
-
-  if (audioInput) {
-    audioInput.addEventListener('change', function () {
-      if (this.files && this.files[0]) showSelectedAudio(this.files[0].name);
-    });
-  }
-
-  if (removeAudioBtn) {
-    removeAudioBtn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      clearSelectedAudio();
-    });
-  }
-
-  if (audioDropZone) {
-    audioDropZone.addEventListener('dragover', function (e) {
-      e.preventDefault();
-      audioDropZone.classList.add('dragover');
-    });
-    audioDropZone.addEventListener('dragleave', function () {
-      audioDropZone.classList.remove('dragover');
-    });
-    audioDropZone.addEventListener('drop', function (e) {
-      e.preventDefault();
-      audioDropZone.classList.remove('dragover');
-      var files = e.dataTransfer && e.dataTransfer.files;
-      if (files && files[0] && audioInput) {
-        try {
-          var dt = new DataTransfer();
-          dt.items.add(files[0]);
-          audioInput.files = dt.files;
-        } catch (ex) {}
-        showSelectedAudio(files[0].name);
-      }
-    });
-  }
+  /* Audio drop zone */
+  setupDropZone({
+    zone:     '#drop-zone-audio',
+    input:    '#audio-input',
+    content:  '#drop-zone-audio-content',
+    selected: '#drop-zone-audio-selected',
+    name:     '#audio-selected-name',
+    remove:   '#remove-audio',
+  });
 
   /* Submit spinner */
   var analyzeForm   = $('#analyze-form');
@@ -203,6 +170,28 @@
   $$('textarea').forEach(function (ta) {
     ta.addEventListener('input', function () { autoResize(ta); });
   });
+
+  /**
+   * Parses an SSE chunk and calls onDelta for each content delta received.
+   * @param {string}   chunk    Raw SSE chunk text
+   * @param {function} onDelta  Called with each delta string
+   */
+  function parseSSEChunk(chunk, onDelta) {
+    var lines = chunk.split('\n');
+    lines.forEach(function (line) {
+      if (!line.startsWith('data: ')) return;
+      var data = line.slice(6).trim();
+      if (data === '[DONE]') return;
+      try {
+        var parsed = JSON.parse(data);
+        var delta  = parsed.choices
+          && parsed.choices[0]
+          && parsed.choices[0].delta
+          && parsed.choices[0].delta.content;
+        if (delta) onDelta(delta);
+      } catch (e) {}
+    });
+  }
 
   /* Chat */
   var chatForm     = $('#chat-form');
@@ -283,20 +272,10 @@
               return;
             }
             var chunk = decoder.decode(result.value, { stream: true });
-            var lines = chunk.split('\n');
-            lines.forEach(function(line) {
-              if (!line.startsWith('data: ')) return;
-              var data = line.slice(6).trim();
-              if (data === '[DONE]') return;
-              try {
-                var parsed = JSON.parse(data);
-                var delta = parsed.choices && parsed.choices[0] && parsed.choices[0].delta && parsed.choices[0].delta.content;
-                if (delta) {
-                  accumulated += delta;
-                  content.textContent = accumulated;
-                  scrollToBottom();
-                }
-              } catch(e) {}
+            parseSSEChunk(chunk, function (delta) {
+              accumulated += delta;
+              content.textContent = accumulated;
+              scrollToBottom();
             });
             return read();
           });
