@@ -37,8 +37,13 @@ try {
         if (!empty($past)) {
             $ragContext = "\n\nRelevant past analyses:\n";
             foreach ($past as $r) {
-                $ragContext .= '- [' . $r['type'] . '] ' . ($r['filename'] ?: 'text') . ': '
-                    . ($r['summary'] ?: mb_substr($r['content'], 0, 200)) . "\n";
+                if (!is_array($r)) continue;
+                $type     = is_string($r['type'] ?? null)     ? $r['type']     : 'unknown';
+                $filename = is_string($r['filename'] ?? null)  ? $r['filename'] : '';
+                $summary  = is_string($r['summary'] ?? null)   ? $r['summary']  : '';
+                $content  = is_string($r['content'] ?? null)   ? $r['content']  : '';
+                $ragContext .= '- [' . $type . '] ' . ($filename ?: 'text') . ': '
+                    . ($summary ?: mb_substr($content, 0, 200)) . "\n";
             }
         }
     }
