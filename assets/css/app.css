@@ -293,10 +293,6 @@ a:hover { text-decoration: underline; }
   align-items: start;
 }
 
-@media (max-width: 768px) {
-  .results-columns { grid-template-columns: 1fr; }
-}
-
 .analysis-panel,
 .chat-panel {
   background: var(--surface);
@@ -1168,4 +1164,9 @@ a:hover { text-decoration: underline; }
     color: var(--muted);
     line-height: 1.6;
     margin: 0;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .results-columns { grid-template-columns: 1fr; }
 }
