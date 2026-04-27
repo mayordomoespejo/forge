@@ -16,6 +16,7 @@ ob_start();
 
         <form id="analyze-form" action="/analyze" method="POST" enctype="multipart/form-data">
             <input type="hidden" name="mode" id="mode-input" value="file">
+            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($_SESSION['csrf_token'] ?? '') ?>">
 
             <div class="tab-panel" id="tab-file">
                 <div class="drop-zone" id="drop-zone">
