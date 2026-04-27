@@ -8,10 +8,15 @@ class JobQueue
 {
     private string $baseDir;
 
+    private const DIR_PENDING    = 'pending';
+    private const DIR_PROCESSING = 'processing';
+    private const DIR_COMPLETED  = 'completed';
+    private const DIR_FAILED     = 'failed';
+
     public function __construct()
     {
         $this->baseDir = __DIR__ . '/../../storage/queue';
-        foreach (['pending', 'processing', 'completed', 'failed'] as $dir) {
+        foreach ([self::DIR_PENDING, self::DIR_PROCESSING, self::DIR_COMPLETED, self::DIR_FAILED] as $dir) {
             $path = $this->baseDir . '/' . $dir;
             if (!is_dir($path)) mkdir($path, 0755, true);
         }
@@ -34,11 +39,11 @@ class JobQueue
             'file_path'  => $filePath,
             'options'    => $options,
             'created_at' => date('c'),
-            'status'     => 'pending',
+            'status'     => self::DIR_PENDING,
         ];
 
         file_put_contents(
-            $this->baseDir . '/pending/' . $jobId . '.json',
+            $this->baseDir . '/' . self::DIR_PENDING . '/' . $jobId . '.json',
             json_encode($job),
             LOCK_EX
         );
@@ -55,7 +60,7 @@ class JobQueue
      */
     public function dequeue(): ?array
     {
-        $files = glob($this->baseDir . '/pending/*.json') ?: [];
+        $files = glob($this->baseDir . '/' . self::DIR_PENDING . '/*.json') ?: [];
         if (empty($files)) return null;
 
         sort($files);
@@ -64,11 +69,11 @@ class JobQueue
         if (!is_array($job)) return null;
 
         unlink($file);
-        $job['status']     = 'processing';
+        $job['status']     = self::DIR_PROCESSING;
         $job['started_at'] = date('c');
 
         file_put_contents(
-            $this->baseDir . '/processing/' . $job['id'] . '.json',
+            $this->baseDir . '/' . self::DIR_PROCESSING . '/' . $job['id'] . '.json',
             json_encode($job),
             LOCK_EX
         );
@@ -84,19 +89,19 @@ class JobQueue
      */
     public function complete(string $jobId, array $result): void
     {
-        $procFile = $this->baseDir . '/processing/' . $jobId . '.json';
+        $procFile = $this->baseDir . '/' . self::DIR_PROCESSING . '/' . $jobId . '.json';
         $job      = is_file($procFile)
             ? (json_decode((string) file_get_contents($procFile), true) ?? [])
             : [];
 
         if (is_file($procFile)) unlink($procFile);
 
-        $job['status']       = 'completed';
+        $job['status']       = self::DIR_COMPLETED;
         $job['completed_at'] = date('c');
         $job['result']       = $result;
 
         file_put_contents(
-            $this->baseDir . '/completed/' . $jobId . '.json',
+            $this->baseDir . '/' . self::DIR_COMPLETED . '/' . $jobId . '.json',
             json_encode($job),
             LOCK_EX
         );
@@ -110,19 +115,19 @@ class JobQueue
      */
     public function fail(string $jobId, string $error): void
     {
-        $procFile = $this->baseDir . '/processing/' . $jobId . '.json';
+        $procFile = $this->baseDir . '/' . self::DIR_PROCESSING . '/' . $jobId . '.json';
         $job      = is_file($procFile)
             ? (json_decode((string) file_get_contents($procFile), true) ?? [])
             : ['id' => $jobId];
 
         if (is_file($procFile)) unlink($procFile);
 
-        $job['status']    = 'failed';
+        $job['status']    = self::DIR_FAILED;
         $job['error']     = $error;
         $job['failed_at'] = date('c');
 
         file_put_contents(
-            $this->baseDir . '/failed/' . $jobId . '.json',
+            $this->baseDir . '/' . self::DIR_FAILED . '/' . $jobId . '.json',
             json_encode($job),
             LOCK_EX
         );
@@ -136,7 +141,7 @@ class JobQueue
      */
     public function status(string $jobId): ?array
     {
-        foreach (['pending', 'processing', 'completed', 'failed'] as $dir) {
+        foreach ([self::DIR_PENDING, self::DIR_PROCESSING, self::DIR_COMPLETED, self::DIR_FAILED] as $dir) {
             $file = $this->baseDir . '/' . $dir . '/' . $jobId . '.json';
             if (is_file($file)) {
                 return json_decode((string) file_get_contents($file), true);
@@ -152,6 +157,6 @@ class JobQueue
      */
     public function pendingCount(): int
     {
-        return count(glob($this->baseDir . '/pending/*.json') ?: []);
+        return count(glob($this->baseDir . '/' . self::DIR_PENDING . '/*.json') ?: []);
     }
 }
