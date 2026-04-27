@@ -6,7 +6,9 @@ namespace Forge\Services;
 
 class VideoIndexerService
 {
-    private const BASE_URL = 'https://api.videoindexer.ai';
+    private const BASE_URL               = 'https://api.videoindexer.ai';
+    private const MAX_POLLING_ATTEMPTS   = 60;
+    private const POLLING_INTERVAL_SECONDS = 5;
 
     private string $accountId;
     private string $location;
@@ -113,8 +115,8 @@ class VideoIndexerService
      */
     private function pollIndex(string $videoId, string $token): array
     {
-        for ($i = 0; $i < 60; $i++) {
-            sleep(5);
+        for ($i = 0; $i < self::MAX_POLLING_ATTEMPTS; $i++) {
+            sleep(self::POLLING_INTERVAL_SECONDS);
 
             $url = sprintf(
                 '%s/%s/Accounts/%s/Videos/%s/Index?accessToken=%s',
