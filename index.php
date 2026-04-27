@@ -21,9 +21,19 @@ $uri    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($uri === '/' && $method === 'GET') {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
     require __DIR__ . '/views/home.php';
 
 } elseif ($uri === '/analyze' && $method === 'POST') {
+
+    $submittedToken = $_POST['_csrf'] ?? '';
+    if (!hash_equals($_SESSION['csrf_token'] ?? '', $submittedToken)) {
+        $_SESSION['result'] = ['type' => 'error', 'error' => 'Invalid request. Please try again.'];
+        header('Location: /results');
+        exit;
+    }
 
     $rateLimiter = new Forge\Services\RateLimiter(20, 3600);
     $clientIp    = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
@@ -54,6 +64,21 @@ if ($uri === '/' && $method === 'GET') {
 
             if (!move_uploaded_file($_FILES['file']['tmp_name'], $dest)) {
                 throw new \RuntimeException('Failed to move uploaded file.');
+            }
+
+            // Validate actual file content (not just extension)
+            $finfo    = new \finfo(FILEINFO_MIME_TYPE);
+            $realMime = $finfo->file($dest);
+            $allowed  = [
+                'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+                'application/pdf',
+                'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/flac', 'audio/mp4', 'audio/x-m4a', 'video/webm',
+                'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska',
+            ];
+
+            if (!in_array($realMime, $allowed, true)) {
+                @unlink($dest);
+                throw new \RuntimeException('File type not allowed: ' . $realMime);
             }
 
             if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
