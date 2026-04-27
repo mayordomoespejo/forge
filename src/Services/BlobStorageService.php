@@ -110,6 +110,12 @@ class BlobStorageService implements StorageService
         );
     }
 
+    /**
+     * Returns the MIME type for a given file extension.
+     *
+     * @param  string $ext File extension without leading dot
+     * @return string      MIME type string
+     */
     private function mimeFor(string $ext): string
     {
         return match ($ext) {
